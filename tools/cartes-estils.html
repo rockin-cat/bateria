@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<title>Cartes d'estils ROCKIN per imprimir</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Open Sans', sans-serif; }
+  .page { width: 210mm; height: 297mm; position: relative; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .grid { position: absolute; left: 17mm; top: 22.5mm; display: grid; grid-template-columns: 88mm 88mm; grid-auto-rows: 63mm; }
+  .card { width: 88mm; height: 63mm; position: relative; }
+  .card svg { width: 100%; height: 100%; display: block; }
+  /* marques de tall */
+  .card::before, .card::after { content: ''; position: absolute; border: 0 solid #999; }
+  .card::before { left: -4mm; right: -4mm; top: 0; bottom: 0; border-top-width: .2mm; border-bottom-width: .2mm; clip-path: polygon(0 0, 3mm 0, 3mm 100%, 0 100%, 0 0, 100% 0, 100% 100%, calc(100% - 3mm) 100%, calc(100% - 3mm) 0, 100% 0); }
+  .card::after { top: -4mm; bottom: -4mm; left: 0; right: 0; border-left-width: .2mm; border-right-width: .2mm; clip-path: polygon(0 0, 100% 0, 100% 3mm, 0 3mm, 0 0, 0 100%, 100% 100%, 100% calc(100% - 3mm), 0 calc(100% - 3mm), 0 100%); }
+  .foot { position: absolute; bottom: 8mm; left: 17mm; right: 17mm; font-size: 8pt; color: #777; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<script type="module">
+  import { STYLES } from '../js/styles.js';
+  import { renderCardSVG } from '../js/cardview.js';
+  const cards = STYLES.flatMap((s) => s.cards.map((c) => ({ c, s })));
+  for (let i = 0; i < cards.length; i += 8) {
+    const page = document.createElement('div');
+    page.className = 'page';
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    for (const { c } of cards.slice(i, i + 8)) {
+      const d = document.createElement('div');
+      d.className = 'card';
+      d.innerHTML = renderCardSVG(c, { base: '../' });
+      grid.appendChild(d);
+    }
+    page.appendChild(grid);
+    const foot = document.createElement('div');
+    foot.className = 'foot';
+    foot.innerHTML = `<span>ROCKIN · Cartes d'estils de bateria · © 2026 Rockin.cat SCCL · CC BY-NC-SA 4.0</span><span>Pàgina ${i / 8 + 1} de ${Math.ceil(cards.length / 8)}</span>`;
+    page.appendChild(foot);
+    document.body.appendChild(page);
+  }
+  document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "title": "Bateria Rockin: joc per aprendre bateria amb les cartes Rockin / Rockin Drums: a drum-kit learning game with the Rockin cards",
+  "description": "<p><b>CA:</b> Joc web per aprendre a tocar la bateria: l'alumnat llegeix les cartes de patrons de bateria Rockin i les toca sobre una banda generada (baix, teclat i guitarra, sense bateria), amb demostració prèvia, correcció a cada cop (entrada MIDI d'una bateria electrònica o teclat de l'ordinador), control del temps i un camí per nivells.</p><p><b>EN:</b> Browser game for learning drum kit: students read the Rockin drum pattern cards and play them over a generated band (bass, keys and guitar, no drums), with a demonstration first, per-hit feedback (MIDI electronic drum kit or computer keyboard), timing feedback and a levelled path.</p>",
+  "upload_type": "software",
+  "creators": [
+    { "name": "González Fernández, Laia", "affiliation": "Rockin.cat SCCL", "orcid": "0009-0009-9640-3210" }
+  ],
+  "license": "cc-by-nc-sa-4.0",
+  "access_right": "open",
+  "keywords": ["music education", "educació musical", "drum kit", "bateria", "MIDI", "game-based learning", "Rockin"],
+  "language": "cat"
+}
