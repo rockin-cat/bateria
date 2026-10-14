@@ -294,22 +294,23 @@ SCREENS.home = (root) => {
     <div class="panel next-panel">
       ${raw ? `<div class="song-box"><div class="disc"></div><div class="t"><small>La teva cançó</small><b>${esc(raw.titol)}</b><span>${esc(raw.artista || 'Cançó pròpia')} · tempo ${song.songTempo} · ${esc(BANDS[song.band]?.name ?? song.band)}</span><div class="parts">${parts.slice(0, 10).map((p) => `<span class="part">${esc(partLabel(p.name) || '—')}<i>${p.bars.length}</i></span>`).join('')}${parts.length > 10 ? '<span class="part">…</span>' : ''}</div></div><button type="button" class="btn btn-ghost" data-act="song" data-key="song">Canvia <kbd>C</kbd></button></div>`
         : `<div class="song-box"><div class="disc"></div><div class="t"><small>Primer de tot</small><b>Tria la teva cançó</b><span>Tot el full de ruta es fa sobre una cançó: la que toqueu amb el grup.</span></div></div>`}
-      <div class="step-box">
-        <div class="info">
-          <span class="lvl-tag"><span class="num">${L.n}</span>Nivell ${L.n} · ${esc(L.titol)}</span>
-          <h2>${esc(stepCode(st))} · ${esc(st.titol)}</h2>
-          <p>${esc(st.text)}</p>
-          ${st.voice ? `<span class="voice-tag">${icon('mic').replace('<svg', '<svg width="16" height="16"')} ${st.voice === 'sing' ? 'Canta mentre toques' : 'Compta en veu alta mentre toques'}</span>` : ''}
-          ${raw ? `<div class="home-map"><h3>Toques ${formText(st, song)}</h3>${songMap(st, song, r?.choice)}</div>` : ''}
-          ${r ? `<span class="stars-big">${[0, 1, 2].map((i) => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span>` : ''}
+      <div class="step-head">
+        <span class="lvl-tag"><span class="num">${L.n}</span>Nivell ${L.n} · ${esc(L.titol)}</span>
+        <h2>${esc(stepCode(st))} · ${esc(st.titol)}${r ? ` <span class="stars-big">${[0, 1, 2].map((i) => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span>` : ''}</h2>
+        <p>${esc(st.text)}</p>
+        ${st.voice ? `<span class="voice-tag">${icon('mic').replace('<svg', '<svg width="16" height="16"')} ${st.voice === 'sing' ? 'Canta mentre toques' : 'Compta en veu alta mentre toques'}</span>` : ''}
+      </div>
+      <div class="np-cards"><div class="thumbs big-first n${Math.min(4, cards.length + (hasSolo ? 1 : 0))}">${cards.slice(0, 3).map((c) => `<div class="thumb">${thumb(c)}</div>`).join('')}${hasSolo ? '<div class="thumb thumb-solo">SOLO</div>' : ''}</div></div>
+      <div class="np-side">
+        ${raw ? `<div class="home-map"><h3>Toques ${formText(st, song)}</h3>${songMap(st, song, r?.choice)}</div>` : ''}
+        <div class="np-bottom">
           <div class="progress">Nivell ${L.n}: ${levelDone(L)} de ${L.passos.length}<span class="bar"><i style="width:${(levelDone(L) / L.passos.length) * 100}%"></i></span></div>
           <div class="progress">Full de ruta: ${done} de ${ALL_STEPS.length}<span class="bar"><i style="width:${(done / ALL_STEPS.length) * 100}%"></i></span></div>
+          <div class="go-row">
+            <button type="button" class="btn btn-red btn-go-big" data-act="go" data-key="go" data-autofocus>▶ ${raw ? 'Continua' : 'Tria la cançó'} <kbd>Enter</kbd></button>
+            <button type="button" class="btn" data-act="map" data-key="map2">Tria un altre pas <kbd>R</kbd></button>
+          </div>
         </div>
-        <div class="thumbs n${Math.min(4, cards.length + (hasSolo ? 1 : 0))}">${cards.slice(0, 3).map((c) => `<div class="thumb">${thumb(c)}</div>`).join('')}${hasSolo ? '<div class="thumb thumb-solo">SOLO</div>' : ''}</div>
-      </div>
-      <div class="go-row">
-        <button type="button" class="btn btn-red btn-go-big" data-act="go" data-key="go" data-autofocus>▶ ${raw ? 'Continua' : 'Tria la cançó'} <kbd>Enter</kbd></button>
-        <button type="button" class="btn" data-act="map" data-key="map2">Tria un altre pas <kbd>R</kbd></button>
       </div>
     </div>
     <div class="panel menu-panel">
@@ -532,7 +533,7 @@ SCREENS.level = (root, params) => {
       <div class="ld-text"><p>${esc(p.text)}</p><ul>${(p.com ?? []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
         ${p.voice ? `<span class="voice-tag">${icon('mic').replace('<svg', '<svg width="16" height="16"')} ${p.voice === 'sing' ? 'Canta mentre toques: al final et preguntarà si ho has pogut fer.' : 'Compta en veu alta: al final et preguntarà si ho has pogut fer.'}</span>` : ''}
         ${raw ? `<h3>${esc(raw.titol)} en aquest pas · ${formText(st, song)}</h3>${songMap(st, song, r?.choice)}` : '<p class="muted">Primer tria la cançó.</p>'}</div>
-      <div class="ld-cards"><div class="thumbs n${Math.min(4, cards.length + (solo ? 1 : 0))}">${cards.slice(0, 3).map((c) => `<div class="thumb">${thumb(c)}</div>`).join('')}${solo ? '<div class="thumb thumb-solo">SOLO</div>' : ''}</div></div>
+      <div class="ld-cards"><div class="thumbs big-first n${Math.min(4, cards.length + (solo ? 1 : 0))}">${cards.slice(0, 3).map((c) => `<div class="thumb">${thumb(c)}</div>`).join('')}${solo ? '<div class="thumb thumb-solo">SOLO</div>' : ''}</div></div>
       <div class="ld-foot"><span class="stars-big">${[0, 1, 2].map((i) => `<span class="${i < (r?.stars ?? 0) ? '' : 'off'}">★</span>`).join('')}</span><span class="muted small">${r?.tempo ? `Millor: tempo ${r.tempo}` : 'Per fer-lo: ★★ (75 % de precisió)'}</span><button type="button" class="btn btn-red" data-play="${id}" tabindex="-1" style="margin-left:auto">▶ Toca <kbd>Enter</kbd></button></div>`;
     detail.querySelector('[data-play]').addEventListener('click', () => openStep(id));
   };

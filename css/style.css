@@ -525,22 +525,26 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .pv-card .thumb { width: min(100%, 44vh); }
 .pv-cards.n2 .pv-card:not(.main) .thumb, .pv-cards.n3 .pv-card:not(.main) .thumb { width: min(100%, 22vh); }
 
-/* Pantalles de menú més compactes: amplada màxima i panells a la mida del contingut */
-#v-screen, #v-setup { width: 100%; max-width: 1180px; margin: 0 auto; }
-#v-screen.scr-who, #v-screen.scr-map { max-width: none; }
-.home { align-items: start; grid-template-columns: minmax(0, 1fr) 320px; }
-.home .next-panel { gap: 10px; }
-.home .step-box { flex: none; grid-template-columns: minmax(0, 1fr) 210px; }
-.home .step-box h2 { font-size: 20px; }
-.home .song-box .t b { font-size: 19px; }
-.home .home-map { flex: none; max-height: 30vh; }
-.home .go-row { margin-top: 4px; }
-.home .menu-panel .item { padding: 7px 10px; }
-.level { align-items: start; }
-.level > .panel { max-height: 100%; }
-.level .level-detail { grid-template-columns: minmax(0, 1fr) 260px; grid-template-rows: auto auto auto; }
-.level .ld-text { max-height: 52vh; }
-.skills { align-items: start; }
-.skills > .panel { max-height: 100%; }
-#v-screen.scr-home { justify-content: center; }
-#v-screen.scr-home .scr-body { flex: none; }
+/* Inici: capçalera del pas a dalt i, a sota, la carta tan gran com l'espai i al costat el mapa i el botó */
+.home { grid-template-columns: minmax(0, 1fr) 330px; container-type: size; }
+.home .next-panel { display: grid; grid-template-columns: min(calc((100cqw - 380px) * 0.58), calc((100cqh - 270px) * 1.4)) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 12px 20px; }
+.home .song-box, .home .step-head { grid-column: 1 / -1; }
+.step-head { display: flex; flex-direction: column; gap: 4px; }
+.step-head h2 { font-size: 22px; display: flex; align-items: center; gap: 12px; }
+.step-head p { color: var(--ink2); margin: 0; }
+.np-cards { grid-column: 1; grid-row: 3; container-type: size; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.np-side { grid-column: 2; grid-row: 3; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.np-side .home-map { flex: 1; min-height: 0; overflow: auto; margin: 0; }
+.np-bottom { display: flex; flex-direction: column; gap: 8px; }
+.thumbs.big-first { width: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 8px; }
+.thumbs.big-first .thumb { width: min(100cqw, 100cqh * 1.4); flex: none; }
+.thumbs.big-first.n2 .thumb:first-child, .thumbs.big-first.n3 .thumb:first-child, .thumbs.big-first.n4 .thumb:first-child { width: min(100cqw, 68cqh * 1.4); }
+.thumbs.big-first.n2 .thumb:not(:first-child), .thumbs.big-first.n3 .thumb:not(:first-child), .thumbs.big-first.n4 .thumb:not(:first-child) { width: min(31cqw, 27cqh * 1.4); }
+/* Nivell: igual, la carta a sota del títol i el text al costat */
+.level { container-type: size; }
+.level .level-detail { grid-template-columns: min(calc((100cqw - 400px) * 0.55), calc((100cqh - 150px) * 1.4)) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+.level .level-detail .ld-head, .level .level-detail .ld-foot { grid-column: 1 / -1; }
+.level .level-detail .ld-cards { grid-column: 1; grid-row: 2; container-type: size; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.level .level-detail .ld-text { grid-column: 2; grid-row: 2; max-height: none; }
+.level .level-detail .ld-cards { align-items: flex-start; }
+.np-cards { align-items: flex-start; }
