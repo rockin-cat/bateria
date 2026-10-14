@@ -15,7 +15,8 @@ import * as store from './store.js';
 import { STYLES, styleOf } from './styles.js';
 import { savedCode, saveCode, listLibrary, loadLibrarySong, errorText, songFromLibrary } from './library.js';
 import { BOOK, canPlay, toSpec, structure, rawFromLibrarySpec, customSong, partLabel } from './songs.js';
-import { ROUTE, ALL_STEPS, stepById, stepBars as rawStepBars, stepCards as rawStepCards, stepSong } from './route.js';
+import { ROUTE, ALL_STEPS, stepById, stepBars as rawStepBars, stepCards as rawStepCards, stepSong, isChorus } from './route.js';
+import { songFromMidi, progFromMidiSong, toBase64, midiEventsOf, midiBarEvents } from './midi.js';
 import { summary as skillSummary } from './skills.js';
 
 // Cada pas es toca sobre la roda de la cançó o, si cal l'estructura, sobre la cançó sencera.
@@ -333,6 +334,7 @@ SCREENS.song = (root, params) => {
     ['book', 'book', 'Llibre ROCKIN obert', `${BOOK.length} cançons per començar`],
     ['biblio', 'cloud', 'Biblioteca del professorat', 'Les del Generador (amb codi)'],
     ['write', 'pen', 'Escriu-la tu', 'Els acords i les parts'],
+    ['midi', 'note', 'Carrega un MIDI', 'Sona la cançó amb la melodia'],
     ...(mine.length ? [['mine', 'note', 'Les meves cançons', `${mine.length} fetes servir`]] : []),
   ];
   root.innerHTML = `${head('La cançó', params.first ? 'Tot el full de ruta es fa sobre la cançó que tries: la que toqueu amb el grup.' : 'El full de ruta es fa sempre sobre aquesta cançó.')}
@@ -363,6 +365,7 @@ SCREENS.song = (root, params) => {
     const parts = structure(raw);
     prev.innerHTML = `<h3>La cançó</h3><div class="big">${esc(raw.titol)}</div><div class="muted">${esc(raw.artista || '')}</div>
       <div class="meta"><span>Tempo ${esc(raw.tempo)}${sp && sp.songTempo !== Number(raw.tempo) ? ` (per a la bateria, ${sp.songTempo})` : ''}</span><span>${esc(raw.metre || '4/4')}</span><span>${esc(raw.estil || 'pop')}${sp ? ' → banda ' + esc(BANDS[sp.band]?.name ?? sp.band) : ''}</span>${sp ? `<span>${sp.bars.length} compassos</span>` : ''}</div>
+      ${raw.midi ? `<p class="small muted">🎹 Del MIDI: sona la cançó sense bateria${raw.melodia ? `, amb la melodia (${esc(raw.melodia)}) ben clara` : ' (no he trobat quina pista és la melodia)'}.</p>` : ''}
       ${ok ? '' : '<p class="muted">És en 6/8: de moment el joc de bateria només fa compassos de 4/4.</p>'}
       ${sp ? (() => {
         // El patró amb què la tocaràs: el del pas que et toca ara (i el patró propi de la cançó, si en porta)
@@ -408,6 +411,39 @@ SCREENS.song = (root, params) => {
       choose(raw);
     });
     upd();
+  } else if (src === 'midi') {
+    mid.innerHTML = `<h3>Carrega un MIDI</h3><form class="song-form" id="midi-form">
+      <label>Fitxer MIDI (.mid) <input type="file" id="mf-file" accept=".mid,.midi,audio/midi"></label>
+      <label>Títol <input type="text" id="mf-title" placeholder="El nom de la cançó" autocomplete="off"></label>
+      <label>Parts (si el MIDI no en porta): nom i compassos <input type="text" id="mf-parts" placeholder="Intro 4, Estrofa 8, Tornada 8, Estrofa 8, Tornada 8" autocomplete="off"></label>
+      <label>Estil <select id="mf-estil">${ESTILS.map((e) => `<option>${e}</option>`).join('')}</select></label>
+      <p class="muted small" id="mf-msg">El joc toca el MIDI sense la bateria: la bateria la poses tu. Funciona amb MIDI de 4/4 (en trobaràs de karaoke de moltes cançons). Si el MIDI té marcadors de part, els fa servir.</p>
+      <button type="submit" class="btn btn-red" id="mf-use" disabled>Fes servir aquesta cançó</button></form>`;
+    let buf = null;
+    let made = null;
+    const build = () => {
+      if (!buf) return;
+      try {
+        const ms = songFromMidi(buf, $('mf-parts').value);
+        const titol = $('mf-title').value.trim() || ($('mf-file').files[0]?.name ?? 'Cançó MIDI').replace(/\.midi?$/i, '');
+        made = { id: made?.id ?? `midi:${Date.now()}`, titol, artista: '', prog: progFromMidiSong(ms), metre: ms.metre === '4/4' || ms.metre === '2/4' ? ms.metre : ms.metre, tempo: ms.tempo, estil: $('mf-estil').value, font: 'midi', midi: toBase64(buf), parts: $('mf-parts').value, melodia: ms.melody };
+        $('mf-msg').textContent = `${ms.bars} compassos · tempo ${ms.tempo} · ${ms.metre}${ms.parts.length > 1 ? ` · ${ms.parts.length} parts` : ' · sense parts (escriu-les a dalt si cal)'}${ms.melody ? ` · melodia: ${ms.melody}` : ' · no he trobat la melodia'}`;
+        $('mf-use').disabled = !canPlay(made);
+        if (!canPlay(made)) $('mf-msg').textContent += ' · de moment només es poden fer servir MIDI de 4/4.';
+        preview(made);
+      } catch (err) { $('mf-msg').textContent = `No s'ha pogut llegir: ${err.message}`; $('mf-use').disabled = true; }
+    };
+    $('mf-file').addEventListener('change', async () => {
+      const f = $('mf-file').files[0];
+      if (!f) return;
+      if (f.size > 400000) { $('mf-msg').textContent = 'El fitxer és massa gran (més de 400 kB).'; return; }
+      buf = await f.arrayBuffer();
+      if (!$('mf-title').value) $('mf-title').value = f.name.replace(/\.midi?$/i, '');
+      build();
+    });
+    for (const id of ['mf-title', 'mf-parts', 'mf-estil']) $(id).addEventListener('change', build);
+    $('midi-form').addEventListener('submit', (e) => { e.preventDefault(); if (made && canPlay(made)) choose(made); });
+    preview(null);
   } else if (src === 'biblio') {
     const code = savedCode();
     mid.innerHTML = `<h3>Biblioteca del professorat</h3><form class="song-form" id="lib-form"><label>Codi del professorat <input type="text" id="lib-code" value="${esc(code)}" autocomplete="off"></label><button type="submit" class="btn">Obre la biblioteca</button></form><p id="lib-msg" class="muted small"></p><div class="list scroll" id="lib-list"></div>`;
@@ -729,6 +765,19 @@ function openStep(id, opts = {}) {
   const cards = stepCards(step, song, choice);
   const groove = bars.find((b) => b.card && !b.card.brk && !b.stop)?.card ?? cards[0];
   const tempo = rec?.lastTempo || Math.min(song.songTempo, step.tempoMax ?? 120);
+  const form = stepSong(step, song).form;
+  let midiEvents = null;
+  try { midiEvents = midiEventsOf(raw); } catch { midiEvents = null; }
+  // La banda marca l'estructura (només quan es toca la cançó sencera i no hi ha MIDI)
+  const roles = [];
+  if (form && !midiEvents) {
+    const hasChorus = bars.some((b) => isChorus(b.part));
+    let pi = -1;
+    bars.forEach((b, j) => {
+      if (b.partStart || j === 0) pi++;
+      roles[j] = /^intro/i.test(b.part ?? '') ? 'intro' : (hasChorus ? isChorus(b.part) : pi % 2 === 1) ? 'chorus' : 'verse';
+    });
+  }
   S.play = {
     mode: 'route',
     step,
@@ -749,9 +798,11 @@ function openStep(id, opts = {}) {
     metronome: step.level.n === 1 && !rec,
     quiet: false,
     title: `${stepCode(step)} · ${step.titol}`,
-    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''} · ${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'} · Nivell ${step.level.n}: ${step.level.titol}`,
+    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''}${midiEvents ? ' (MIDI)' : ''} · ${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'} · Nivell ${step.level.n}: ${step.level.titol}`,
     playBars: bars.length,
-    form: stepSong(step, song).form,
+    form,
+    roles,
+    midiEvents,
   };
   preparePlay();
 }
@@ -1136,7 +1187,9 @@ async function startSession(opts = {}) {
     const bars = P.bars;
     playBar = (j) => {
       const b = bars[j % bars.length];
-      return { card: b.card, chord: b.chord, part: b.partStart ? partLabel(b.part) : '', solo: b.solo, stop: b.stop };
+      const k = j % bars.length;
+      const pickup = P.form && b.partEnd && k < bars.length - 1;
+      return { card: b.card, chord: b.chord, part: b.partStart ? partLabel(b.part) : '', solo: b.solo, stop: b.stop, songBar: P.midiEvents ? b.idx : null, role: P.roles[k] ?? null, pickup };
     };
     // A la demostració, els compassos de solo els toca el joc amb el ritme
     demoBar = (j) => { const b = playBar(j); return b.card ? b : { ...b, card: P.groove, solo: false }; };
@@ -1164,7 +1217,8 @@ async function startSession(opts = {}) {
     playBars: P.playBars,
     playBar,
     demoBar,
-    countBar: { card: countBar.card, chord: countBar.chord },
+    countBar,
+    midiBar: P.mode === 'route' && P.midiEvents ? (bar, o) => midiBarEvents(P.midiEvents, bar, o) : null,
     endChord: chords[0],
     metronome: P.metronome,
     quiet: P.quiet && P.mode !== 'route',

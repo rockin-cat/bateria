@@ -201,7 +201,7 @@ export function stepBars(step, song, choice = {}) {
       else solo = j % plan.solo.every >= plan.solo.every - n;
       if (solo) card = null;
     }
-    return { card, chord: b.chord, part: b.part, partStart: b.partStart, partEnd: b.partEnd, solo, stop };
+    return { card, chord: b.chord, part: b.part, partStart: b.partStart, partEnd: b.partEnd, solo, stop, idx: b.idx ?? j };
   });
 }
 

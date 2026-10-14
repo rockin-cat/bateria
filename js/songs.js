@@ -52,7 +52,7 @@ export function toSpec(raw) {
     const prev = items[i - 1];
     const next = items[i + 1];
     const partStart = i === 0 || (it.part && prev?.part !== it.part) || (it.part && raw.prog && isMarkerAt(raw.prog, i));
-    bars.push({ chord, sym: it.sym, part: it.part, partStart, partEnd: false });
+    bars.push({ chord, sym: it.sym, part: it.part, partStart, partEnd: false, idx: i });
     void next;
   });
   // fi de part: el compàs abans d'un inici de part (i el darrer)

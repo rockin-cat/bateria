@@ -213,6 +213,7 @@ export function click(time, accent = false) {
 
 /** Una nota d'un instrument de mostres: fa servir la mostra més propera i en canvia l'afinació. */
 export function tone(set, midi, time, dur, { gain = 0.6, dest = 'band', release = 0.12, pan = 0 } = {}) {
+  if (set === 'lead') return lead(midi, time, dur, { gain, dest });
   const map = buffers[set];
   if (!map || !map.size) return null;
   let best = null;
@@ -223,6 +224,30 @@ export function tone(set, midi, time, dur, { gain = 0.6, dest = 'band', release 
   }
   if (best == null) return null;
   return start(map.get(best), time, { gain, rate: Math.pow(2, (midi - best) / 12), dest, dur, release, pan });
+}
+
+/** La melodia dels MIDI: un so sintètic clar (triangle + una mica de quadrada), perquè es distingeixi de la banda. */
+function lead(midi, time, dur, { gain = 0.25, dest = 'band' } = {}) {
+  const c = audioContext();
+  const t = Math.max(time, c.currentTime);
+  const f = 440 * Math.pow(2, (midi - 69) / 12);
+  const g = c.createGain();
+  const lp = c.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 2600;
+  const o1 = c.createOscillator(); o1.type = 'triangle'; o1.frequency.value = f;
+  const o2 = c.createOscillator(); o2.type = 'square'; o2.frequency.value = f;
+  const g2 = c.createGain(); g2.gain.value = 0.18;
+  o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(lp); lp.connect(bus[dest] ?? bus.master);
+  const end = t + Math.max(0.05, dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
+  g.gain.setValueAtTime(gain * 0.8, Math.max(t + 0.02, end - 0.03));
+  g.gain.exponentialRampToValueAtTime(0.0001, end + 0.08);
+  o1.start(t); o2.start(t); o1.stop(end + 0.1); o2.stop(end + 0.1);
+  const item = { src: o1, g, time: t };
+  live.add(item);
+  o1.onended = () => { live.delete(item); try { o2.stop(); } catch { /* */ } };
+  return item;
 }
 
 /** Atura tot el que s'havia programat (amb una baixada ràpida perquè no peti). */
