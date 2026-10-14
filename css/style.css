@@ -524,3 +524,23 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .preview h3 { margin-top: 2px; }
 .pv-card .thumb { width: min(100%, 44vh); }
 .pv-cards.n2 .pv-card:not(.main) .thumb, .pv-cards.n3 .pv-card:not(.main) .thumb { width: min(100%, 22vh); }
+
+/* Pantalles de menú més compactes: amplada màxima i panells a la mida del contingut */
+#v-screen, #v-setup { width: 100%; max-width: 1180px; margin: 0 auto; }
+#v-screen.scr-who, #v-screen.scr-map { max-width: none; }
+.home { align-items: start; grid-template-columns: minmax(0, 1fr) 320px; }
+.home .next-panel { gap: 10px; }
+.home .step-box { flex: none; grid-template-columns: minmax(0, 1fr) 210px; }
+.home .step-box h2 { font-size: 20px; }
+.home .song-box .t b { font-size: 19px; }
+.home .home-map { flex: none; max-height: 30vh; }
+.home .go-row { margin-top: 4px; }
+.home .menu-panel .item { padding: 7px 10px; }
+.level { align-items: start; }
+.level > .panel { max-height: 100%; }
+.level .level-detail { grid-template-columns: minmax(0, 1fr) 260px; grid-template-rows: auto auto auto; }
+.level .ld-text { max-height: 52vh; }
+.skills { align-items: start; }
+.skills > .panel { max-height: 100%; }
+#v-screen.scr-home { justify-content: center; }
+#v-screen.scr-home .scr-body { flex: none; }
