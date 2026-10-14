@@ -360,7 +360,16 @@ SCREENS.song = (root, params) => {
     prev.innerHTML = `<h3>La cançó</h3><div class="big">${esc(raw.titol)}</div><div class="muted">${esc(raw.artista || '')}</div>
       <div class="meta"><span>Tempo ${esc(raw.tempo)}${sp && sp.songTempo !== Number(raw.tempo) ? ` (per a la bateria, ${sp.songTempo})` : ''}</span><span>${esc(raw.metre || '4/4')}</span><span>${esc(raw.estil || 'pop')}${sp ? ' → banda ' + esc(BANDS[sp.band]?.name ?? sp.band) : ''}</span>${sp ? `<span>${sp.bars.length} compassos</span>` : ''}</div>
       ${ok ? '' : '<p class="muted">És en 6/8: de moment el joc de bateria només fa compassos de 4/4.</p>'}
-      <h3>Estructura</h3><div class="struct">${parts.map((pt) => `<div class="sp"><b>${esc(partLabel(pt.name) || '—')}</b><div class="chords">${pt.bars.map((c) => `<span>${esc(c)}</span>`).join('')}</div></div>`).join('')}</div>
+      ${sp ? (() => {
+        // El patró amb què la tocaràs: el del pas que et toca ara (i el patró propi de la cançó, si en porta)
+        const st = stepById(recommended());
+        const cs = stepCards(st, sp, routeRec(st.id)?.choice);
+        const solo = stepBars(st, sp).some((b) => b.solo);
+        return `<h3>El patró · pas ${esc(stepCode(st))}: ${esc(st.titol)}</h3>
+          <div class="pv-cards n${Math.min(3, cs.length + (solo ? 1 : 0))}">${cs.slice(0, 3).map((c, i) => `<div class="pv-card${i ? '' : ' main'}"><div class="thumb">${thumb(c)}</div><small>${esc(cardLabel(c))}${c.title && !c.style ? ' · ' + esc(c.title) : ''}</small></div>`).join('')}${solo ? '<div class="pv-card"><div class="thumb thumb-solo">SOLO</div><small>Solo</small></div>' : ''}</div>
+          ${sp.groove ? `<h3>Patró de bateria de la cançó (biblioteca)</h3><div class="pv-cards n1"><div class="pv-card"><div class="thumb">${thumb(sp.groove)}</div></div></div>` : ''}
+          <h3>Parts</h3><div class="parts">${parts.map((pt) => `<span class="part" title="${esc(pt.bars.join(' '))}">${esc(partLabel(pt.name) || '—')}<i>${pt.bars.length}</i></span>`).join('')}</div>`;
+      })() : `<h3>Estructura</h3><div class="parts">${parts.map((pt) => `<span class="part">${esc(partLabel(pt.name) || '—')}<i>${pt.bars.length}</i></span>`).join('')}</div>`}
       ${ok ? '<button type="button" class="btn btn-red" id="song-pick">Tria aquesta cançó <kbd>Enter</kbd></button>' : ''}`;
     $('song-pick')?.addEventListener('click', () => choose(raw));
   };

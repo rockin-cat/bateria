@@ -514,3 +514,13 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
   .muted, .item .tx small, .sk-steps, .bag-top small { color: #555 !important; }
   .sk-banda { color: #111; background: #fde8e8; }
 }
+
+/* Tria de cançó: el patró a la dreta */
+.pv-cards { display: grid; gap: 8px; }
+.pv-cards.n2, .pv-cards.n3 { grid-template-columns: 1fr 1fr; }
+.pv-cards.n2 .main, .pv-cards.n3 .main { grid-column: 1 / -1; }
+.pv-card { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pv-card small { color: var(--ink2); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview h3 { margin-top: 2px; }
+.pv-card .thumb { width: min(100%, 44vh); }
+.pv-cards.n2 .pv-card:not(.main) .thumb, .pv-cards.n3 .pv-card:not(.main) .thumb { width: min(100%, 22vh); }
