@@ -293,6 +293,10 @@ const STYLE = {
 };
 
 /** El final: tothom toca l'acord i el deixa sonar. */
+/** Marques (nivell 9): tota la banda fa un cop curt a cada `beat` i calla. */
+function stopHits(c, beats) {
+  return beats.flatMap((b) => [ev('baix', b, 0.45, bassRoot(c), 0.65), ev('rhodes', b, 0.5, keys(c), 0.2), ev('acustica', b, 0.4, strumNotes(c), 0.22, { strum: 0.012 })]);
+}
 function ending(c) {
   return [ev('baix', 0, 3, bassRoot(c), 0.6), ev('rhodes', 0, 3.2, keys(c), 0.18), ev('acustica', 0, 3.2, strumNotes(c), 0.2, { strum: 0.02 })];
 }
@@ -301,8 +305,9 @@ function ending(c) {
  * Què toca la banda en un compàs. `kind`: 'play' (normal), 'end' (acord final).
  * Torna esdeveniments amb `beat` relatiu a l'inici del compàs.
  */
-export function barEvents(bandId, chord, kind = 'play') {
+export function barEvents(bandId, chord, kind = 'play', opts = {}) {
   if (!chord) return [];
   if (kind === 'end') return ending(chord);
+  if (kind === 'stop') return stopHits(chord, opts.beats ?? [0]);
   return (STYLE[bandId] ?? STYLE.rock)(chord, BANDS[bandId]);
 }

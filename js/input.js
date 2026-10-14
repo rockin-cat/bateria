@@ -23,7 +23,7 @@ export const KEY_MAP = {
 };
 export const KEY_LABEL = { kk: 'Espai', sn: 'F', hh: 'J · K obert', oh: 'K', ride: 'L', crash: 'U', t1: 'R', t2: 'T', t3: 'Y' };
 
-export function createInput({ onHit, onDevices, getCustomMap }) {
+export function createInput({ onHit, onDevices, getCustomMap, keysOn = () => true }) {
   let learner = null; // quan s'aprèn la bateria, el següent cop va aquí
   let access = null;
   const state = { devices: [], supported: !!navigator.requestMIDIAccess, error: null, lastNote: null };
@@ -84,7 +84,7 @@ export function createInput({ onHit, onDevices, getCustomMap }) {
     if (ev.target.closest?.('input[type="text"], input[type="number"], textarea, select')) return;
     const key = ev.key.toLowerCase();
     const piece = KEY_MAP[key];
-    if (!piece) return;
+    if (!piece || !keysOn()) return;
     ev.preventDefault();
     if (ev.repeat || held.has(key)) return;
     held.add(key);

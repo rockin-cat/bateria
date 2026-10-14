@@ -17,7 +17,7 @@ const VISUAL_AHEAD = 3; // compassos generats per endavant per a la pista
 /**
  * cfg: {
  *   tempo, band, demoBars, playBars (Infinity = lliure),
- *   playBar(j) -> { card, chord, part? },   // què toca el compàs j de la part «toques tu»
+ *   playBar(j) -> { card (null = solo), chord, part?, stop? },  demoBar(j): el mateix per a la demostració,   // què toca el compàs j de la part «toques tu»
  *   countBar: { card, chord },   // el compàs d'entrada (l'últim de la frase: si és un break, el toca el joc)
  *   endChord,
  *   metronome: bool, quiet: bool (compte silenciós), demoInPlay: bool (la bateria del joc també sona mentre toques)
@@ -41,7 +41,7 @@ export function createSession(cfg, hooks = {}) {
   const barStart = (i) => t0 + i * barDur;
 
   function info(i) {
-    if (i < D) return { kind: 'demo', j: i, ...cfg.playBar(i) };
+    if (i < D) return { kind: 'demo', j: i, ...(cfg.demoBar ?? cfg.playBar)(i) };
     if (i === D) {
       const cb = cfg.countBar ?? { card: cfg.playBar(0).card, chord: cfg.playBar(0).chord };
       return { kind: 'count', j: -1, card: cb.card, chord: cb.chord, entryBreak: !!cb.card?.brk };
@@ -85,9 +85,10 @@ export function createSession(cfg, hooks = {}) {
     if (!b) return;
     const start = b.start;
     // Banda
-    const kind = b.kind === 'end' ? 'end' : 'play';
+    const kind = b.kind === 'end' ? 'end' : b.stop ? 'stop' : 'play';
+    const beats = b.stop && b.card ? [...new Set((b.card.notes.crash ?? [0]).map((st) => st / (b.card.grid / 4)))] : undefined;
     if (!(b.kind === 'play' && b.quiet)) {
-      for (const e of barEvents(cfg.band, b.chord, kind)) {
+      for (const e of barEvents(cfg.band, b.chord, kind, { beats })) {
         const t = start + e.beat * spb;
         const dur = e.dur * spb;
         e.notes.forEach((m, k) => {

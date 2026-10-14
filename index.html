@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ROCKIN · Bateria</title>
-  <meta name="description" content="Joc per aprendre a tocar la bateria amb les cartes de patrons ROCKIN, amb una banda que t'acompanya i correcció a cada cop.">
+  <meta name="description" content="Joc per aprendre a tocar la bateria amb les cartes de patrons ROCKIN i el full de ruta de bateria, sempre a partir d'una cançó.">
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Open+Sans:wght@400;800&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script>
     // Qualsevol error surt a la pàgina, perquè es pugui explicar.
@@ -35,160 +35,43 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#" id="home-link" title="Inici">
+    <a class="brand" href="#" id="home-link" title="Inici" tabindex="-1">
       <img src="https://rockin.cat/wp-content/uploads/2022/07/rockin-logo.svg" alt="Rockin" onerror="this.outerHTML='<b class=&quot;wordmark&quot;>ROCKIN</b>'">
       <span>Bateria</span>
     </a>
+    <button type="button" id="song-chip" class="song-chip" tabindex="-1" hidden><i>♪</i><span></span></button>
     <div class="top-right">
-      <button type="button" id="player-chip" class="chip" hidden>👤 <span></span></button>
-      <button type="button" id="midi-pill" class="pill" title="Configura la bateria">🥁 <span>Buscant la bateria…</span></button>
-      <label class="toggle" title="Si la teva bateria ja sona pels seus altaveus o auriculars, deixa-ho apagat">
-        <input type="checkbox" id="my-sound"> <span>Sentir els meus cops</span>
+      <button type="button" id="player-chip" class="chip" tabindex="-1" hidden><i>●</i><span></span></button>
+      <button type="button" id="midi-pill" class="chip pill" tabindex="-1" title="Configura la bateria"><i>●</i><span>Buscant la bateria…</span></button>
+      <label class="chip toggle" title="Si la teva bateria ja sona pels seus altaveus o auriculars, deixa-ho apagat">
+        <input type="checkbox" id="my-sound" tabindex="-1"> <span>Els meus cops</span>
       </label>
     </div>
   </header>
 
   <div id="page-error" class="page-error" hidden></div>
 
-  <main>
-    <!-- INICI -->
-    <section id="v-home" class="view">
-      <div class="hero">
-        <img class="hero-logo" src="assets/brand/rockin-logo.png" alt="ROCKIN · [r]evolucionem la música">
-        <div>
-          <h1>Aprèn a tocar la bateria amb les cartes ROCKIN</h1>
-          <p>Primer escoltes com sona la carta. Després la banda continua i la bateria la poses tu. A cada cop et diu si ha anat bé.</p>
-        </div>
-      </div>
-
-      <div id="who-short" class="who-short" hidden>
-        <span>Hola, <b id="who-current"></b>! Tria què vols fer:</span>
-        <button type="button" class="btn btn-ghost" id="who-change">No soc jo · canvia</button>
-      </div>
-      <div id="who" class="panel who">
-        <h2>Qui juga?</h2>
-        <p class="muted small">Tria el teu nom o escriu-ne un de nou.</p>
-        <div id="who-list" class="who-list"></div>
-        <form id="who-form" class="who-form">
-          <input id="who-name" type="text" maxlength="24" placeholder="Escriu el teu nom" autocomplete="off">
-          <button type="submit" class="btn">Som-hi</button>
-        </form>
-      </div>
-
-      <p class="menu-keys" id="menu-keys" hidden>Amb el teclat: <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> per moure't, <kbd>Enter</kbd> per entrar i <kbd>Esc</kbd> per tornar.</p>
-      <div id="doors" class="doors" hidden>
-        <button type="button" class="door door-main" id="door-continue">
-          <span class="door-icon">▶</span>
-          <span class="door-text"><b>Continua el camí</b><small id="door-continue-sub"></small></span>
-        </button>
-        <button type="button" class="door" data-go="map"><span class="door-icon">🗺️</span><span class="door-text"><b>El camí</b><small>Tots els reptes, nivell a nivell</small></span></button>
-        <button type="button" class="door" data-go="free"><span class="door-icon">🎸</span><span class="door-text"><b>Toca amb la banda</b><small>Tria qualsevol carta i toca sense final</small></span></button>
-        <button type="button" class="door" data-go="tempo"><span class="door-icon">⏱️</span><span class="door-text"><b>Entrenador de tempo</b><small>La banda entra i surt: aguanta el tempo</small></span></button>
-        <button type="button" class="door" data-go="styles"><span class="door-icon">🎨</span><span class="door-text"><b>Inspirador d'estils</b><small>Del rock a la bossa nova, amb cartes noves</small></span></button>
-        <button type="button" class="door" data-go="profile"><span class="door-icon">📈</span><span class="door-text"><b>El meu perfil</b><small>Com vas i què et convé practicar</small></span></button>
-        <button type="button" class="door" data-go="lib"><span class="door-icon">📚</span><span class="door-text"><b>Cançons de la biblioteca</b><small>Les cançons del Generador de diagrames</small></span></button>
-        <button type="button" class="door" data-go="setup"><span class="door-icon">⚙️</span><span class="door-text"><b>Connecta la bateria</b><small>Comprova les peces i el retard del so</small></span></button>
-      </div>
-
-      <div class="panel how">
-        <h2>Com funciona</h2>
-        <ol class="how-steps">
-          <li><b>La carta diu què toques.</b> Rodona blava: bombo (peu dret). Verda: caixa. Groga: charles. Les petites són cops fluixos.</li>
-          <li><b>Primer escoltes.</b> El joc toca la carta amb la banda i veus les rodones arribar a la línia groga.</li>
-          <li><b>Ara tu.</b> Escoltes tres compassos, el quart és l'entrada (quatre baquetes, o un break) i entres quan torna a començar. La banda continua; la bateria la fas tu.</li>
-          <li><b>Les estrelles diuen la precisió.</b> ★★★ vol dir que gairebé tots els cops han caigut al seu lloc.</li>
-        </ol>
-        <p class="muted">Funciona amb una bateria electrònica connectada per USB (Chrome o Edge; si el navegador pregunta si pot fer servir dispositius MIDI, digues que sí). Sense bateria, també es pot provar amb el teclat de l'ordinador: <kbd>Espai</kbd> bombo, <kbd>F</kbd> caixa, <kbd>J</kbd> charles.</p>
-      </div>
-    </section>
-
-    <!-- CAMÍ -->
-    <section id="v-map" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" data-go="home">← Inici</button>
-        <h1>El camí</h1>
-        <button type="button" id="level-pill" class="level-pill"></button>
-      </div>
-      <div id="map-levels" class="map-levels"></div>
-    </section>
-
-    <!-- TOCA AMB LA BANDA (tria de carta) -->
-    <section id="v-free" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" data-go="home">← Inici</button>
-        <h1>Toca amb la banda</h1>
-      </div>
-      <p class="lead">Tria una carta. La banda tocarà fins que diguis prou, i al final veuràs com ha anat.</p>
-      <div id="free-cards" class="free-cards"></div>
-    </section>
-
-    <!-- ENTRENADOR DE TEMPO -->
-    <section id="v-tempo" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" data-go="home">← Inici</button>
-        <h1>Entrenador de tempo</h1>
-      </div>
-      <div class="panel tempo-intro">
-        <p class="lead">La banda toca quatre compassos i després <b>calla</b>. Tu continues tocant la carta com si encara sonés. Quan torna, el joc mira si encara vas amb ella. Si aguantes, el silenci següent és més llarg. L'objectiu: aguantar el tempo tant com puguis.</p>
-        <p class="muted">Mentre la banda calla no hi ha res a la pantalla que marqui el temps: només el teu pols. En tornar, a la partitura veuràs on han caigut els teus cops.</p>
-        <p id="tempo-record" class="tempo-record"></p>
-      </div>
-      <h2>Tria la carta</h2>
-      <div id="tempo-cards" class="free-cards"></div>
-    </section>
-
-    <!-- INSPIRADOR D'ESTILS -->
-    <section id="v-styles" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" id="styles-back">← Inici</button>
-        <h1 id="styles-title">Inspirador d'estils</h1>
-        <a class="btn btn-ghost small-btn" href="imprimir/cartes-estils-rockin.pdf" target="_blank" rel="noopener">🖨️ Cartes per imprimir (PDF)</a>
-      </div>
-      <p class="lead" id="styles-lead">Cada estil té la seva manera de tocar la bateria. Tria'n un: llegiràs què el fa especial, tindràs cartes noves de patró i una banda que el toca.</p>
-      <div id="styles-list" class="styles-list"></div>
-      <div id="style-detail" class="style-detail" hidden></div>
-    </section>
-
-    <!-- PERFIL -->
-    <section id="v-profile" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" data-go="home">← Inici</button>
-        <h1 id="profile-title">El meu perfil</h1>
-      </div>
-      <div id="profile-body"></div>
-    </section>
-
-    <!-- BIBLIOTECA -->
-    <section id="v-lib" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" data-go="home">← Inici</button>
-        <h1>Cançons de la biblioteca</h1>
-      </div>
-      <p class="lead">Les cançons que el professorat comparteix al Generador de diagrames. Si la cançó té un patró de bateria, el joc el fa servir; si no, tria'n un.</p>
-      <form id="lib-form" class="lib-form">
-        <label>Codi del professorat <input id="lib-code" type="text" autocomplete="off"></label>
-        <button class="btn" type="submit">Obre la biblioteca</button>
-      </form>
-      <p id="lib-msg" class="muted"></p>
-      <div id="lib-list" class="lib-list"></div>
-    </section>
+  <main id="main">
+    <!-- Pantalles de menú (es dibuixen des de app.js) -->
+    <section id="v-screen" class="view screen"></section>
 
     <!-- CONFIGURACIÓ -->
-    <section id="v-setup" class="view" hidden>
-      <div class="view-head">
-        <button type="button" class="btn-back" data-go="back">← Tornar</button>
-        <h1>Connecta la bateria</h1>
+    <section id="v-setup" class="view screen" hidden>
+      <div class="scr-head">
+        <button type="button" class="back" data-back tabindex="-1">← Enrere</button>
+        <h1>Configuració</h1>
+        <span class="scr-sub">La bateria, el retard del so i el teclat</span>
       </div>
       <div class="setup-grid">
         <div class="panel">
-          <h2>1. La bateria</h2>
+          <h2><b>1</b> La bateria</h2>
           <p id="setup-devices" class="muted"></p>
-          <p>Toca qualsevol pad: s'ha d'encendre la mateixa peça al dibuix.</p>
+          <p class="small">Toca qualsevol pad: s'ha d'encendre la mateixa peça al dibuix.</p>
           <div id="setup-kit" class="kit setup-kit"></div>
           <p id="setup-last" class="setup-last">—</p>
           <div class="row">
             <button type="button" class="btn" id="learn-start">Aprèn la meva bateria</button>
-            <button type="button" class="btn btn-ghost" id="learn-reset">Torna als valors de fàbrica</button>
+            <button type="button" class="btn btn-ghost" id="learn-reset">Valors de fàbrica</button>
           </div>
           <div id="learn-box" class="learn-box" hidden>
             <p id="learn-text"></p>
@@ -197,19 +80,19 @@
           </div>
         </div>
         <div class="panel">
-          <h2>2. El retard del so</h2>
-          <p>Si fas servir altaveus Bluetooth o el so arriba tard, el joc et pot comptar els cops com a endarrerits. Fes la prova: sonaran 4 clics d'avís i després 8 més. Toca la caixa exactament amb els 8.</p>
+          <h2><b>2</b> El retard del so</h2>
+          <p class="small">Si el so arriba tard (altaveus Bluetooth…), el joc et pot comptar els cops com a endarrerits. Fes la prova: sonaran 4 clics d'avís i després 8 més. Toca la caixa exactament amb els 8.</p>
           <div class="row">
             <button type="button" class="btn" id="lat-test">Fes la prova</button>
-            <span id="lat-status" class="muted"></span>
+            <span id="lat-status" class="muted small"></span>
           </div>
           <label class="slider">Retard afegit: <b id="lat-val">0 ms</b>
             <input type="range" id="lat-range" min="-60" max="300" step="5" value="0">
           </label>
-          <label class="toggle setup-toggle"><input type="checkbox" id="low-lat"> Retard mínim (els teus cops sonen abans; si el so peta, desmarca-ho i recarrega)</label>
-          <p class="muted small">El navegador ja compta <span id="lat-base">?</span> ms de retard de sortida. Amb auriculars o altaveus Bluetooth, el que toques sempre sonarà una mica tard (el Bluetooth afegeix 150–250 ms): per tocar, millor amb cable o amb els altaveus de l'ordinador.</p>
-          <h2>3. Sense bateria</h2>
-          <p>Amb el teclat de l'ordinador: <kbd>Espai</kbd> bombo · <kbd>F</kbd> caixa · <kbd>J</kbd> charles · <kbd>K</kbd> charles obert · <kbd>L</kbd> ride · <kbd>U</kbd> crash · <kbd>R</kbd> <kbd>T</kbd> <kbd>Y</kbd> toms. Amb <kbd>Maj</kbd>, el cop és fluix. També pots clicar els pads del dibuix.</p>
+          <label class="toggle setup-toggle"><input type="checkbox" id="low-lat"> Retard mínim (si el so peta, desmarca-ho i recarrega)</label>
+          <p class="muted small">El navegador ja compta <span id="lat-base">?</span> ms de retard de sortida. Amb Bluetooth, el que toques sempre sonarà tard (150–250 ms): millor amb cable o amb els altaveus de l'ordinador.</p>
+          <h2><b>3</b> Sense bateria</h2>
+          <p class="small">Amb el teclat: <kbd>Espai</kbd> bombo · <kbd>F</kbd> caixa · <kbd>J</kbd> charles · <kbd>K</kbd> obert · <kbd>L</kbd> ride · <kbd>U</kbd> crash · <kbd>R</kbd> <kbd>T</kbd> <kbd>Y</kbd> toms. Amb <kbd>Maj</kbd>, el cop és fluix.</p>
         </div>
       </div>
     </section>
@@ -217,55 +100,30 @@
     <!-- JOC -->
     <section id="v-play" class="view play" hidden>
       <div class="play-head">
-        <button type="button" class="btn-back" id="play-back">← Tornar</button>
+        <button type="button" class="back" id="play-back" tabindex="-1">← Enrere</button>
         <div class="play-title"><b id="play-title"></b><small id="play-sub"></small></div>
-        <button type="button" class="icon-btn" id="btn-full" title="Pantalla completa">⛶</button>
-      </div>
-      <div class="play-controls" id="play-controls">
-        <div class="ctl tempo-ctl">
-          <span>Tempo</span>
-          <button type="button" class="step" id="tempo-down" aria-label="Més lent">−</button>
-          <b id="tempo-val">80</b>
-          <button type="button" class="step" id="tempo-up" aria-label="Més ràpid">+</button>
+        <div class="play-controls" id="play-controls">
+          <div class="ctl tempo-ctl" title="Tempo (↑ ↓)">
+            <button type="button" class="step" id="tempo-down" aria-label="Més lent" tabindex="-1">−</button>
+            <b id="tempo-val">80</b><span>bpm</span>
+            <button type="button" class="step" id="tempo-up" aria-label="Més ràpid" tabindex="-1">+</button>
+          </div>
+          <label class="ctl sel" id="band-wrap">Banda <select id="band-sel" tabindex="-1"></select></label>
+          <label class="ctl tg" title="Els pads s'encenen una mica abans de cada cop (H)"><input type="checkbox" id="hints" tabindex="-1"><span>Pads <kbd>H</kbd></span></label>
+          <label class="ctl tg" title="Metrònom (M)"><input type="checkbox" id="metro" tabindex="-1"><span>Metrònom <kbd>M</kbd></span></label>
+          <label class="ctl tg" id="quiet-wrap" title="La banda calla dos compassos de cada quatre (Q)"><input type="checkbox" id="quiet" tabindex="-1"><span>Silenci <kbd>Q</kbd></span></label>
+          <button type="button" class="ctl icon-btn" id="btn-full" title="Pantalla completa" tabindex="-1">⛶</button>
         </div>
-        <label class="ctl">Banda <select id="band-sel"></select></label>
-        <label class="ctl toggle" title="La bateria dibuixada t'avisa una mica abans de cada cop"><input type="checkbox" id="hints"> Pads que s'encenen</label>
-        <label class="ctl toggle"><input type="checkbox" id="metro"> Metrònom</label>
-        <label class="ctl toggle" id="quiet-wrap" title="La banda calla dos compassos de cada quatre: has de mantenir tu el temps"><input type="checkbox" id="quiet"> Compte en silenci</label>
-        <span class="ctl" id="fill-wrap" hidden>Breaks
-          <select id="fill-sel">
-            <option value="none">Cap</option>
-            <option value="part">Al final de cada part</option>
-            <option value="4">Cada 4 compassos</option>
-            <option value="8">Cada 8 compassos</option>
-          </select>
-          <select id="brk-sel" aria-label="Quin break"></select>
-        </span>
       </div>
 
       <div class="play-main">
         <div class="play-left">
-          <div class="brk-ask panel" id="brk-ask" hidden>
-            <h3>Vols fer breaks entre mig de la cançó?</h3>
-            <p class="muted small">Un break és el compàs que avisa que canvia la part: en lloc del ritme, fas el break.</p>
-            <div class="brk-modes" id="brk-modes">
-              <button type="button" class="btn btn-ghost" data-fill="none">No, només el ritme</button>
-              <button type="button" class="btn btn-ghost" data-fill="part">Sí, al final de cada part</button>
-              <button type="button" class="btn btn-ghost" data-fill="4">Cada 4 compassos</button>
-              <button type="button" class="btn btn-ghost" data-fill="8">Cada 8 compassos</button>
-            </div>
-            <div id="brk-pick-wrap" hidden>
-              <p class="small"><b>Quin break?</b></p>
-              <div class="brk-pick" id="brk-pick"></div>
-            </div>
-            <button type="button" class="btn btn-primary" id="brk-ok">D'acord</button>
-          </div>
           <div id="cards" class="cards"></div>
+          <div class="choose-bar" id="choose-bar" hidden></div>
           <div class="play-actions">
             <button type="button" class="btn btn-go" id="btn-go">▶ Escolta i toca</button>
-            <span id="load-msg" class="muted"></span>
+            <span id="load-msg" class="muted small"></span>
           </div>
-          <p class="keys-hint"><kbd>Enter</kbd> comença / para · <kbd>↑</kbd><kbd>↓</kbd> tempo · <kbd>←</kbd><kbd>→</kbd> repte anterior / següent · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> partitura / pista / només la carta · <kbd>M</kbd> metrònom · <kbd>Esc</kbd> torna</p>
           <div class="coach" id="coach"></div>
           <div class="timecheck" id="timecheck" title="Cada punt és un cop: a l'esquerra, avançat; a la dreta, endarrerit">
             <div class="tc-label"><span>Aviat</span><b>Control del temps</b><span>Tard</span></div>
@@ -274,10 +132,11 @@
         </div>
         <div class="stage">
           <div class="view-tabs" role="group" aria-label="Què es veu al costat de la carta">
-            <button type="button" class="vt" data-vt="score">Partitura</button>
-            <button type="button" class="vt" data-vt="lanes">Pista</button>
-            <button type="button" class="vt" data-vt="none">Només la carta</button>
-            <label class="toggle vt-colors" id="colors-wrap"><input type="checkbox" id="note-colors" checked> Colors de la carta</label>
+            <button type="button" class="vt" data-vt="score" tabindex="-1"><kbd>1</kbd> Partitura</button>
+            <button type="button" class="vt" data-vt="lanes" tabindex="-1"><kbd>2</kbd> Pista</button>
+            <button type="button" class="vt" data-vt="none" tabindex="-1"><kbd>3</kbd> Només la carta</button>
+            <label class="toggle vt-colors" id="colors-wrap"><input type="checkbox" id="note-colors" checked tabindex="-1"> Colors</label>
+            <div class="bar-strip" id="bar-strip"></div>
           </div>
           <div class="view-box">
             <div class="score-wrap" id="score-wrap"></div>
@@ -285,40 +144,41 @@
             <div class="none-msg" id="none-msg"><b>Llegeix la carta.</b><span>La partitura i la pista estan amagades. Els teus cops surten igualment a la carta i a la bateria.</span></div>
             <div class="verdicts" id="verdicts"></div>
             <div class="quiet-cover" id="quiet-cover"><b>🤫 Aguanta el tempo</b><span>La banda calla. Continua tocant la carta: quan torni, veuràs on has caigut.</span></div>
+            <div class="solo-cover" id="solo-cover"><b>SOLO</b><span>Toca el que vulguis. Al compàs següent, tornes al patró!</span></div>
           </div>
           <div id="kit" class="kit"></div>
         </div>
       </div>
 
-
       <div id="result" class="result" hidden>
         <div class="result-card">
-          <div class="res-unlock" id="res-unlock" hidden></div>
-          <div class="stars" id="res-stars"></div>
-          <div class="res-score"><b id="res-pct"></b><span>de precisió</span></div>
-          <p id="res-line" class="res-line"></p>
-          <div class="res-cols">
-            <div>
+          <div class="res-top">
+            <div class="res-left">
+              <div class="res-unlock" id="res-unlock" hidden></div>
+              <div class="stars" id="res-stars"></div>
+              <div class="res-score"><b id="res-pct"></b><span>de precisió</span></div>
+              <p id="res-line" class="res-line"></p>
+              <div class="res-voice" id="res-voice" hidden></div>
+              <ul id="res-tips" class="res-tips"></ul>
+            </div>
+            <div class="res-right">
               <h3>Peça a peça</h3>
               <div id="res-pieces" class="res-pieces"></div>
-            </div>
-            <div>
               <h3>Control del temps</h3>
               <div class="tc-bar big"><div class="tc-zone"></div><div class="tc-center"></div><div class="tc-dots" id="res-dots"></div><div class="tc-needle" id="res-needle"></div></div>
               <div class="tc-label"><span>Aviat</span><span id="res-mean"></span><span>Tard</span></div>
+              <p class="muted small">A la carta, les rodones queden pintades: verd si han anat bé, taronja a mitges, vermell si falten.</p>
             </div>
           </div>
-          <ul id="res-tips" class="res-tips"></ul>
-          <p class="muted small">A la carta, les rodones queden pintades: verd si han anat bé, taronja a mitges, vermell si falten.</p>
           <div class="res-actions" id="res-actions"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <span>ROCKIN · Bateria — © 2026 Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a></span>
-    <span id="version">Versió del 26 de setembre de 2026 (19)</span>
+  <footer class="keybar">
+    <div class="keys" id="keys"></div>
+    <span class="ver"><span id="version">v20 · 14 d'octubre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
   </footer>
 </body>
 </html>
