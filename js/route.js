@@ -117,6 +117,28 @@ export const ROUTE = [
   },
 ];
 
+/** Els passos on l'estructura de la cançó importa (inici o final de part, estrofa/tornada, marques, solos per part). */
+export function needsForm(step) {
+  const p = step.plan;
+  return p.first?.every === 'part' || p.fill?.every === 'part' || !!p.parts || !!p.stop || p.solo?.every === 'part' || !!p.choose;
+}
+
+/**
+ * La cançó tal com es toca en un pas. Si el pas no necessita l'estructura, només la roda d'acords
+ * (la primera part que no és la introducció) repetida fins a 8 compassos (16 si el pas ho demana).
+ */
+export function stepSong(step, song) {
+  if (needsForm(step)) return { ...song, form: true };
+  const parts = [];
+  song.bars.forEach((b, j) => { if (b.partStart || j === 0) parts.push([]); parts[parts.length - 1].push(b); });
+  const main = parts.find((pt) => !/^intro/i.test(pt[0]?.part ?? '')) ?? parts[0];
+  const roda = main.slice(0, 8);
+  const len = step.plan.solo?.every === 8 ? 16 : 8;
+  const bars = Array.from({ length: Math.max(len, roda.length) }, (_, j) => ({ ...roda[j % roda.length], partStart: j === 0, partEnd: false }));
+  bars[bars.length - 1].partEnd = true;
+  return { ...song, bars, form: false, roda: roda.map((b) => b.sym ?? b.chord?.name), rodaPart: main[0]?.part ?? '' };
+}
+
 export const ALL_STEPS = ROUTE.flatMap((l) => l.passos.map((p) => ({ ...p, level: l })));
 export const stepById = (id) => ALL_STEPS.find((s) => s.id === id);
 

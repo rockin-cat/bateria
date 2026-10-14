@@ -15,8 +15,12 @@ import * as store from './store.js';
 import { STYLES, styleOf } from './styles.js';
 import { savedCode, saveCode, listLibrary, loadLibrarySong, errorText, songFromLibrary } from './library.js';
 import { BOOK, canPlay, toSpec, structure, rawFromLibrarySpec, customSong, partLabel } from './songs.js';
-import { ROUTE, ALL_STEPS, stepById, stepBars, stepCards } from './route.js';
+import { ROUTE, ALL_STEPS, stepById, stepBars as rawStepBars, stepCards as rawStepCards, stepSong } from './route.js';
 import { summary as skillSummary } from './skills.js';
+
+// Cada pas es toca sobre la roda de la cançó o, si cal l'estructura, sobre la cançó sencera.
+const stepBars = (step, song, choice) => rawStepBars(step, stepSong(step, song), choice);
+const stepCards = (step, song, choice) => rawStepCards(step, stepSong(step, song), choice);
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -295,7 +299,7 @@ SCREENS.home = (root) => {
           <h2>${esc(stepCode(st))} · ${esc(st.titol)}</h2>
           <p>${esc(st.text)}</p>
           ${st.voice ? `<span class="voice-tag">${icon('mic').replace('<svg', '<svg width="16" height="16"')} ${st.voice === 'sing' ? 'Canta mentre toques' : 'Compta en veu alta mentre toques'}</span>` : ''}
-          ${raw ? `<div class="home-map">${songMap(st, song, r?.choice)}</div>` : ''}
+          ${raw ? `<div class="home-map"><h3>Toques ${formText(st, song)}</h3>${songMap(st, song, r?.choice)}</div>` : ''}
           ${r ? `<span class="stars-big">${[0, 1, 2].map((i) => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span>` : ''}
           <div class="progress">Nivell ${L.n}: ${levelDone(L)} de ${L.passos.length}<span class="bar"><i style="width:${(levelDone(L) / L.passos.length) * 100}%"></i></span></div>
           <div class="progress">Full de ruta: ${done} de ${ALL_STEPS.length}<span class="bar"><i style="width:${(done / ALL_STEPS.length) * 100}%"></i></span></div>
@@ -491,7 +495,7 @@ SCREENS.level = (root, params) => {
     detail.innerHTML = `<div class="ld-head"><span class="lvl-tag"><span class="num">${L.n}</span>Pas ${esc(stepCode(st))}</span><h2>${esc(p.titol)}</h2></div>
       <div class="ld-text"><p>${esc(p.text)}</p><ul>${(p.com ?? []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
         ${p.voice ? `<span class="voice-tag">${icon('mic').replace('<svg', '<svg width="16" height="16"')} ${p.voice === 'sing' ? 'Canta mentre toques: al final et preguntarà si ho has pogut fer.' : 'Compta en veu alta: al final et preguntarà si ho has pogut fer.'}</span>` : ''}
-        ${raw ? `<h3>${esc(raw.titol)} en aquest pas</h3>${songMap(st, song, r?.choice)}` : '<p class="muted">Primer tria la cançó.</p>'}</div>
+        ${raw ? `<h3>${esc(raw.titol)} en aquest pas · ${formText(st, song)}</h3>${songMap(st, song, r?.choice)}` : '<p class="muted">Primer tria la cançó.</p>'}</div>
       <div class="ld-cards"><div class="thumbs n${Math.min(4, cards.length + (solo ? 1 : 0))}">${cards.slice(0, 3).map((c) => `<div class="thumb">${thumb(c)}</div>`).join('')}${solo ? '<div class="thumb thumb-solo">SOLO</div>' : ''}</div></div>
       <div class="ld-foot"><span class="stars-big">${[0, 1, 2].map((i) => `<span class="${i < (r?.stars ?? 0) ? '' : 'off'}">★</span>`).join('')}</span><span class="muted small">${r?.tempo ? `Millor: tempo ${r.tempo}` : 'Per fer-lo: ★★ (75 % de precisió)'}</span><button type="button" class="btn btn-red" data-play="${id}" tabindex="-1" style="margin-left:auto">▶ Toca <kbd>Enter</kbd></button></div>`;
     detail.querySelector('[data-play]').addEventListener('click', () => openStep(id));
@@ -745,8 +749,9 @@ function openStep(id, opts = {}) {
     metronome: step.level.n === 1 && !rec,
     quiet: false,
     title: `${stepCode(step)} · ${step.titol}`,
-    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''} · Nivell ${step.level.n}: ${step.level.titol}`,
-    playBars: song.bars.length,
+    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''} · ${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'} · Nivell ${step.level.n}: ${step.level.titol}`,
+    playBars: bars.length,
+    form: stepSong(step, song).form,
   };
   preparePlay();
 }
@@ -956,6 +961,12 @@ function setBig(bigId, nextId) {
   }
 }
 
+/** Què es toca en un pas: la roda o la cançó sencera. */
+function formText(step, song) {
+  const ss = stepSong(step, song);
+  return ss.form ? `tota la cançó (${ss.bars.length} compassos)` : `la roda (${ss.bars.length} compassos)`;
+}
+
 /** Tipus de compàs dins d'un pas (per pintar la tira i el mapa de la cançó). */
 function barKind(plan, b) {
   if (b.solo) return 's';
@@ -1130,7 +1141,7 @@ async function startSession(opts = {}) {
     // A la demostració, els compassos de solo els toca el joc amb el ritme
     demoBar = (j) => { const b = playBar(j); return b.card ? b : { ...b, card: P.groove, solo: false }; };
     chords = bars.map((b) => b.chord);
-    phrase = P.song.bars.findIndex((b, i) => i > 0 && b.partStart);
+    phrase = P.bars.findIndex((b, i) => i > 0 && b.partStart);
     if (phrase < 0) phrase = bars.length;
   } else {
     chords = bandChords(P.band, Math.max(0, ALL_MISSIONS.indexOf(P.cardId)));
@@ -1248,7 +1259,9 @@ function loop() {
       const part = info.part ? ` <b>${esc(info.part)}</b> ·` : '';
       if (info.solo) setCoach(`<b>SOLO!</b>${total}. Toca el que vulguis i torna a entrar a temps.`, 'solo');
       else {
-        const extra = info.quiet ? ' La banda calla: mantén el temps tu.' : info.stop ? ' Marca amb la banda!' : info.card?.brk ? ' Ara el break!' : '';
+        let extra = info.quiet ? ' La banda calla: mantén el temps tu.' : info.stop ? ' Marca amb la banda!' : info.card?.brk ? ' Ara el break!' : '';
+        const nb = P.mode === 'route' && P.form ? P.bars[(info.j + 1) % P.bars.length] : null;
+        if (nb?.partStart && info.j + 1 < P.bars.length) extra += ` <b>→ Ve: ${esc(partLabel(nb.part) || 'part nova')}</b>`;
         setCoach(`<b>Ara tu!</b>${part}${total}.${extra}${P.step?.voice ? (P.step.voice === 'sing' ? ' 🎤 Canta!' : ' 🎤 Compta!') : ''}`, 'play');
       }
     } else if (info.kind === 'end') setCoach('Final!', 'end');
