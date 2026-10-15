@@ -9,6 +9,7 @@
 // Les notes fantasma van entre parèntesis.
 
 import { PIECES, barNotes } from './cards.js';
+import { metre } from './metre.js';
 
 const POS = { crash: 10, hh: 9, oh: 9, ride: 8, t1: 7, t2: 6, sn: 5, ghost: 5, rim: 5, t3: 3, kk: 1, ghostkk: 1, pedal: -1 };
 const XHEAD = new Set(['crash', 'hh', 'oh', 'ride', 'pedal', 'rim']);
@@ -25,8 +26,10 @@ const LEFT = 58;
 // Temps → posició: la MATEIXA escala per a tota la pàgina, també a través de la barra de compàs,
 // perquè el cursor avanci sempre a la mateixa velocitat (si no, sembla que s'acceleri i fa avançar el cop).
 const X0 = LEFT + 16; // on cau el primer temps
-const BEAT_W = (W - 12 - X0) / 7.875;
-const barlineX = (k) => X0 + (4 * k - 0.125) * BEAT_W; // la barra, entre la darrera semicorxera i el temps 1
+// Pulsos per compàs segons la mètrica (4/4: 4; 3/4: 3; 6/8: 2…)
+const BPB = () => metre().bpb;
+const BEAT_W_ = () => (W - 12 - X0) / (2 * BPB() - 0.125);
+const barlineX = (k) => X0 + (BPB() * k - 0.125) * BEAT_W_(); // la barra, entre la darrera subdivisió i el temps 1
 const barStartX = (slot) => (slot === 0 ? LEFT : barlineX(slot));
 
 export function createNotation(root) {
@@ -43,7 +46,7 @@ export function createNotation(root) {
   let colors = true;
 
   /** x (en unitats del viewBox) d'un temps dins del compàs `slot` (0 o 1 de la pàgina). */
-  const xAt = (slot, beat) => X0 + (slot * 4 + beat) * BEAT_W;
+  const xAt = (slot, beat) => X0 + (slot * BPB() + beat) * BEAT_W_();
 
   function render(bars, { hits = [], labels = [] } = {}) {
     let s = `<svg viewBox="0 0 ${W} ${H}" class="notation-svg" role="img" aria-label="Partitura">`;
@@ -51,7 +54,7 @@ export function createNotation(root) {
     for (let i = 0; i < 5; i++) s += `<line x1="8" x2="${W - 8}" y1="${yOf(i * 2)}" y2="${yOf(i * 2)}" stroke="${INK}" stroke-width="1.2"/>`;
     // Clau de percussió i compàs
     s += `<rect x="16" y="${yOf(6)}" width="5" height="${LINE * 2}" fill="${INK}"/><rect x="25" y="${yOf(6)}" width="5" height="${LINE * 2}" fill="${INK}"/>`;
-    s += `<text x="44" y="${yOf(5) - 1}" class="ts">4</text><text x="44" y="${yOf(1) - 1}" class="ts">4</text>`;
+    s += `<text x="44" y="${yOf(5) - 1}" class="ts">${metre().num}</text><text x="44" y="${yOf(1) - 1}" class="ts">${metre().den}</text>`;
     // Barres de compàs
     for (let k = 0; k <= 2; k++) {
       const x = k === 0 ? LEFT : barlineX(k);
@@ -92,7 +95,7 @@ export function createNotation(root) {
       at.set(n.step, list);
     }
     let s = '';
-    for (let b = 0; b < 4; b++) {
+    for (let b = 0; b < BPB(); b++) {
       const onsets = [];
       for (let q = 0; q < per; q++) if (at.has(b * per + q)) onsets.push(q);
       if (!onsets.length) { s += quarterRest(xAt(slot, b + 0.35)); continue; }
@@ -155,7 +158,7 @@ export function createNotation(root) {
             s += `<rect x="${dir > 0 ? st.x + 5 : st.x - 5}" y="${beamY + 7}" width="11" height="4.5" fill="${INK}"/>`;
           }
         });
-        if (grid === 12) s += `<text x="${(x0 + x1) / 2}" y="${beamY - 5}" class="tuplet">3</text>`;
+        if (grid === 12 && metre().div !== 3) s += `<text x="${(x0 + x1) / 2}" y="${beamY - 5}" class="tuplet">3</text>`;
       }
     }
     return s;
@@ -202,8 +205,8 @@ export function createNotation(root) {
           // Un cop una mica avançat al temps 1 pertany al compàs següent: es dibuixa just abans de la seva nota
           // (si no, quedaria a l'altra banda de la barra de compàs, o fins i tot a la pàgina anterior).
           let bar = Math.floor(x);
-          let beat = (x - bar) * 4;
-          if (beat > 3.5) { bar += 1; beat -= 4; }
+          let beat = (x - bar) * BPB();
+          if (beat > BPB() - 0.5) { bar += 1; beat -= BPB(); }
           if (bar === first || bar === first + 1) hits.push({ slot: bar - first, beat, kind: h.kind, piece: h.piece });
         }
         render(bars, { hits, labels });
@@ -211,7 +214,7 @@ export function createNotation(root) {
       // Pilota: avança i bota; toca a baix just a cada temps
       const slot = pos.bar - first;
       const visible = pos.bar >= 0 && slot >= 0 && slot < 2;
-      const beat = Math.max(0, Math.min(3.999, pos.beat));
+      const beat = Math.max(0, Math.min(BPB() - 0.001, pos.beat));
       const x = xAt(slot, beat);
       const y = BALL_REST - BALL_UP * Math.sin(Math.PI * (beat % 1));
       ball.style.left = `${(x / W) * 100}%`;

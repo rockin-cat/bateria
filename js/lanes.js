@@ -63,8 +63,8 @@ export function createLanes(canvas) {
     for (let b = firstBar; b <= pos.bar + 3; b++) {
       const info = s.bars[b];
       const start = s.barStart(b);
-      const sub = info?.card?.grid === 12 ? 3 : 2;
-      for (let k = 0; k < 4 * sub; k++) {
+      const sub = s.div ?? (info?.card?.grid === 12 ? 3 : 2);
+      for (let k = 0; k < (s.bpb ?? 4) * sub; k++) {
         const t = start + (k * s.spb) / sub;
         const x = xOf(t);
         if (x < -10 || x > W + 10) continue;

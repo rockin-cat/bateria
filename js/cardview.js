@@ -36,7 +36,7 @@ export function renderCardSVG(card, opts = {}) {
     const [p, st] = key.split(':');
     if (Number(st) % per === 0 && p !== 'pedal') byBeat[Number(st) / per].push(y);
   }
-  for (let b = 0; b < 4; b++) {
+  for (let b = 0; b < (card.pulses ?? 4); b++) {
     const x = g.x1 + b * g.dx;
     s += `<text x="${X(x)}" y="${Y(g.ytop + 0.03)}" font-family="${font}" font-weight="800" font-size="96" text-anchor="middle" fill="#111">${b + 1}</text>`;
     const ys = byBeat[b];
@@ -146,7 +146,7 @@ export function createCardView(root) {
   function update(beat, active = true) {
     if (!card || !ball) return;
     const g = card.geo;
-    const clamped = Math.max(0, Math.min(3.999, beat));
+    const clamped = Math.max(0, Math.min((card.pulses ?? 4) - 0.001, beat));
     const x = g.x1 + clamped * g.dx;
     const frac = clamped % 1;
     const bounce = Math.sin(Math.PI * frac);

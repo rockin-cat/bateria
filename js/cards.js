@@ -30,7 +30,7 @@ export const LANE_COLOR = { crash: '#d9536a', ride: '#f59f00', hh: '#ffd84d', t1
 const DRAWN_GEO = { x1: 0.2, dx: 0.19, ytop: 0.26 };
 const ROW_Y = { crash: 0.37, ride: 0.41, hh: 0.41, oh: 0.41, t1: 0.49, sn: 0.57, ghost: 0.57, rim: 0.57, t2: 0.63, t3: 0.69, kk: 0.76, ghostkk: 0.76, pedal: 0.84 };
 
-export function drawnCard({ id, num = '', title = '', notes, grid = 16, brk = false, box = '#a98a5a', style = null, name = '' }) {
+export function drawnCard({ id, num = '', title = '', notes, grid = 16, brk = false, box = '#a98a5a', style = null, name = '', pulses = 4 }) {
   const marks = {};
   const per = grid / 4;
   // Charles en semicorxeres: es toca alternant mans (D-E). Com a les cartes ROCKIN 30–32.
@@ -41,7 +41,7 @@ export function drawnCard({ id, num = '', title = '', notes, grid = 16, brk = fa
       marks[`${p}:${s}`] = [DRAWN_GEO.x1 + (s / per) * DRAWN_GEO.dx, ROW_Y[p] ?? 0.6, small ? 0.012 : 0.022];
     }
   }
-  return { id, num, title, grid, brk, notes, img: null, drawn: true, geo: DRAWN_GEO, marks, box, style, name, sticking: hh16 };
+  return { id, num, title, grid, brk, notes, img: null, drawn: true, geo: DRAWN_GEO, marks, box, style, name, sticking: hh16, pulses };
 }
 
 const WARMUPS = [
