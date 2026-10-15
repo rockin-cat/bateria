@@ -1,8 +1,8 @@
 // ROCKIN · Bateria: pantalles i flux del joc.
 // Tot cap a la pantalla i es fa amb el teclat: fletxes per moure's, Enter per triar, Esc per tornar enrere.
 
-import { audioContext, resumeAudio, loadSet, drum, setExtraLatency, outputLatencyMs, heardTime, click, stopAll, outputLevel } from './audio.js';
-import { BANDS, BAND_IDS, BAND_SETS, bandChords, bandKeyName, chordFromSymbol } from './band.js';
+import { audioContext, resumeAudio, loadSet, drum, setExtraLatency, outputLatencyMs, heardTime, click, stopAll, outputLevel, tone } from './audio.js';
+import { BANDS, BAND_IDS, BAND_SETS, bandChords, bandKeyName, chordFromSymbol, barEvents } from './band.js';
 import { card as cardById, cardLabel, PIECES, CLS_NAME, LEVELS, levelOf, ALL_MISSIONS, defaultBand, GROOVE_FOR_BREAK, lanesOf, barNotes, LANE_LABEL, LANE_COLOR } from './cards.js';
 import { createSession } from './session.js';
 import { createTrainer } from './trainer.js';
@@ -186,6 +186,7 @@ const SCREENS = {};
 
 function nav(name, params = {}, { push = true } = {}) {
   if (S.view === 'play' && name !== 'play') stopSession();
+  stopPreview();
   if (name === 'home' || name === 'who') S.stack = [];
   else if (push && S.view && S.view !== name) {
     S.stack.push({ name: S.view, params: { ...S.params, focusKey: undefined }, focusKey: document.activeElement?.dataset?.key });
@@ -268,7 +269,7 @@ SCREENS.who = (root) => {
     </div></div></div>`;
   bind(root, {
     pick: (el) => { store.setCurrent(el.dataset.name); nav('home'); },
-    new: () => { const n = $('who-name').value.trim(); if (!n) return; store.setCurrent(n); nav(currentSong() ? 'home' : 'song', currentSong() ? {} : { first: true }); },
+    new: () => { const n = $('who-name').value.trim(); if (!n) return; store.setCurrent(n); if (!player().seenHowto) nav('howto', { first: true }); else nav(currentSong() ? 'home' : 'song', currentSong() ? {} : { first: true }); },
   });
   setKeys([['↑↓', 'tria'], ['Enter', 'som-hi'], ['Tab', 'nom nou']]);
 };
@@ -294,6 +295,7 @@ SCREENS.home = (root) => {
     ['palette', 'E', "Inspirador d'estils", 'Del rock a la bossa nova', () => nav('styles')],
     ['chart', 'P', 'El meu perfil', 'Com vas i què et convé practicar', () => nav('profile')],
     ['gear', 'S', 'Configuració', 'La bateria i el retard del so', () => nav('setup')],
+    ['book', 'A', 'Com es juga', 'La carta, escoltar i tocar', () => nav('howto')],
   ];
   root.innerHTML = `<div class="scr-body home">
     <div class="panel next-panel">
@@ -327,8 +329,60 @@ SCREENS.home = (root) => {
   menu.forEach((m, i) => { acts[`m${i}`] = m[4]; });
   bind(root, acts);
   S.screenKeys = Object.fromEntries([...menu.map((m) => [m[1].toLowerCase(), m[4]]), ['j', () => nav('who')]]);
-  setKeys([['Enter', raw ? 'continua el full de ruta' : 'tria la cançó'], ['↑↓←→', 'moure'], ['R Q C B T E P S', 'dreceres']]);
+  setKeys([['Enter', raw ? 'continua el full de ruta' : 'tria la cançó'], ['↑↓←→', 'moure'], ['R Q C B T E P S A', 'dreceres']]);
 };
+
+// ---- Com es juga (la primera vegada, i des de l'inici amb A) ------------------------------------------------------
+SCREENS.howto = (root, params) => {
+  const c = cardById('p5');
+  root.innerHTML = `<div class="howto"><div class="howto-box">
+    <div class="scr-head"><button type="button" class="back" data-back tabindex="-1">← Enrere</button><h1>Com es juga</h1><span class="scr-sub">Tres coses i ja pots començar.</span></div>
+    <div class="howto-steps">
+      <div class="panel"><span class="num">1</span><h2>La carta diu què toques</h2><p>Cada columna és un temps (1 2 3 4). Blau: bombo, amb el peu dret. Verd: caixa. Groc: charles. Les rodones petites són cops fluixos.</p><div class="thumb">${thumb(c)}</div></div>
+      <div class="panel"><span class="num">2</span><h2>Primer escoltes</h2><p>La banda i el joc toquen la carta tres compassos. La pilota vermella salta de temps en temps: mira on cau. Després sonen quatre baquetes (o un break) i…</p><p class="small">Sempre toques sobre la teva cançó: la que assageu amb el grup.</p></div>
+      <div class="panel"><span class="num">3</span><h2>Ara tu!</h2><p>La banda continua i la bateria la fas tu. A cada cop et diu si ha anat bé. Al final, les estrelles diuen la precisió: amb ★★ el pas queda fet.</p><p class="small">${S.hasMidi ? 'Toca amb la bateria electrònica.' : 'Sense bateria: <kbd>Espai</kbd> bombo · <kbd>F</kbd> caixa · <kbd>J</kbd> charles.'}</p></div>
+    </div>
+    <div class="howto-foot"><button type="button" class="btn btn-red btn-go-big" data-act="ok" data-autofocus>${params.first ? 'Som-hi: tria la cançó' : 'Entesos'} <kbd>Enter</kbd></button><span>Ho pots tornar a veure des de l'inici (<kbd>A</kbd>). Mentre toques, el botó <b>? Ajuda</b> explica la carta i la partitura.</span></div>
+  </div></div>`;
+  bind(root, { ok: () => { const p = player(); if (p) { p.seenHowto = true; store.save(); } if (params.first) nav(currentSong() ? 'home' : 'song', currentSong() ? {} : { first: true }); else back(); } });
+  setKeys([['Enter', params.first ? 'som-hi' : 'entesos'], ['Esc', 'enrere']]);
+};
+
+// ---- Escolta la cançó abans de triar-la -------------------------------------------------------------------------------
+let previewTimer = null;
+function stopPreview() {
+  if (!previewTimer) return;
+  clearTimeout(previewTimer);
+  previewTimer = null;
+  stopAll();
+  const b = document.getElementById('song-listen');
+  if (b) b.innerHTML = '▶ Escolta <kbd>E</kbd>';
+}
+/** Toca la roda de la cançó (4 compassos) amb la banda i la bateria, o el MIDI si en té. */
+async function playPreview(raw) {
+  if (previewTimer) { stopPreview(); return; }
+  await resumeAudio();
+  await loadSounds();
+  const sp = toSpec(raw);
+  const roda = stepSong(stepById('d1d'), sp).bars.slice(0, 4);
+  let midi = null;
+  try { midi = midiEventsOf(raw); } catch { midi = null; }
+  const groove = sp.groove ?? cardById('p5');
+  const ctx = audioContext();
+  const spb = 60 / sp.songTempo;
+  const t0 = ctx.currentTime + 0.15;
+  roda.forEach((b, i) => {
+    const start = t0 + i * 4 * spb;
+    if (midi) for (const e of midiBarEvents(midi, b.idx)) tone(e.inst, e.pitch, start + e.beat * spb, e.dur * spb, { gain: e.gain });
+    else {
+      for (const e of barEvents(sp.band, b.chord, 'play')) e.notes.forEach((m, k) => { const off = e.strum ? Math.abs(e.strum) * k : 0; tone(e.inst, m, start + e.beat * spb + off, e.dur * spb - off, { gain: e.gain * (1 - k * 0.04) }); });
+      for (const n of barNotes(groove)) drum(n.piece, start + n.beat * spb, { vel: PIECES[n.piece].ghost ? 0.5 : 0.85 });
+    }
+  });
+  const btn = document.getElementById('song-listen');
+  if (btn) btn.innerHTML = '■ Para <kbd>E</kbd>';
+  previewTimer = setTimeout(stopPreview, (roda.length * 4 * spb + 0.6) * 1000);
+}
 
 // ---- La cançó ----------------------------------------------------------------------------------------------------
 const ESTILS = ['pop', 'rock', 'reggae', 'rumba', 'funk', 'disco', 'punk', 'ska', 'reggaeton', 'cumbia', 'shuffle', 'swing', 'bossa', 'hiphop', 'trap', 'metal', 'balada'];
@@ -349,9 +403,7 @@ SCREENS.song = (root, params) => {
       <div class="panel col" id="song-mid"></div>
       <div class="panel col preview scroll" id="song-prev"></div>
     </div>`;
-  bind(root, { src: (el) => nav('song', { ...params, src: el.dataset.src, focusKey: `src:${el.dataset.src}` }, { push: false }) });
-  // en moure el focus per les fonts, es canvia la llista
-  root.querySelectorAll('[data-act="src"]').forEach((el) => el.addEventListener('focus', () => { if (el.dataset.src !== src) nav('song', { ...params, src: el.dataset.src, focusKey: `src:${el.dataset.src}` }, { push: false }); }));
+  bind(root, { src: (el) => nav('song', { ...params, src: el.dataset.src }, { push: false }) });
   const mid = $('song-mid');
   const prev = $('song-prev');
   let shown = null;
@@ -364,6 +416,7 @@ SCREENS.song = (root, params) => {
     else back();
   };
   const preview = (raw) => {
+    if (shown !== raw) stopPreview();
     shown = raw;
     if (!raw) { prev.innerHTML = '<p class="muted">Tria una cançó per veure com és.</p>'; return; }
     const ok = canPlay(raw);
@@ -383,8 +436,9 @@ SCREENS.song = (root, params) => {
           ${sp.groove ? `<h3>Patró de bateria de la cançó (biblioteca)</h3><div class="pv-cards n1"><div class="pv-card"><div class="thumb">${thumb(sp.groove)}</div></div></div>` : ''}
           <h3>Parts</h3><div class="parts">${parts.map((pt) => `<span class="part" title="${esc(pt.bars.join(' '))}">${esc(partLabel(pt.name) || '—')}<i>${pt.bars.length}</i></span>`).join('')}</div>`;
       })() : `<h3>Estructura</h3><div class="parts">${parts.map((pt) => `<span class="part">${esc(partLabel(pt.name) || '—')}<i>${pt.bars.length}</i></span>`).join('')}</div>`}
-      ${ok ? '<button type="button" class="btn btn-red" id="song-pick">Tria aquesta cançó <kbd>Enter</kbd></button>' : ''}`;
+      ${ok ? '<div class="song-listen"><button type="button" class="btn" id="song-listen" tabindex="-1">▶ Escolta <kbd>E</kbd></button><button type="button" class="btn btn-red" id="song-pick" style="flex:1">Tria aquesta cançó <kbd>Enter</kbd></button></div>' : ''}`;
     $('song-pick')?.addEventListener('click', () => choose(raw));
+    $('song-listen')?.addEventListener('click', () => playPreview(raw));
   };
   /** Llista de cançons: el focus mostra la cançó i Enter la tria (amb el ratolí, doble clic o el botó). */
   const songList = (list, title) => {
@@ -392,7 +446,10 @@ SCREENS.song = (root, params) => {
     mid.querySelectorAll('[data-i]').forEach((el) => {
       const raw = list[Number(el.dataset.i)];
       el.addEventListener('focus', () => preview(raw));
-      el.addEventListener('click', (e) => { if (e.detail === 0) choose(raw); else preview(raw); });
+      // Teclat: Enter tria. Ratolí: el primer clic mostra la cançó, el segon la tria.
+      let wasShown = false;
+      el.addEventListener('pointerdown', () => { wasShown = shown === raw; });
+      el.addEventListener('click', (e) => { if (e.detail === 0 || wasShown) choose(raw); else preview(raw); });
       el.addEventListener('dblclick', () => choose(raw));
     });
     preview(list.find((r) => r.id === currentSong()?.id) ?? list[0] ?? null);
@@ -490,8 +547,8 @@ SCREENS.song = (root, params) => {
     const first = mid.querySelector('.item.sel') ?? mid.querySelector('.item') ?? mid.querySelector('input, textarea');
     first?.setAttribute('data-autofocus', '');
   }
-  setKeys([['↑↓', 'cançó'], ['←→', 'font / llista'], ['Enter', 'tria la cançó'], ['Esc', 'enrere']]);
-  void shown;
+  setKeys([['↑↓', 'cançó'], ['←→', 'font / llista'], ['E', 'escolta-la'], ['Enter', 'tria la cançó'], ['Esc', 'enrere']]);
+  S.screenKeys = { e: () => { if (shown && canPlay(shown)) playPreview(shown); } };
 };
 
 // ---- Full de ruta (el pòster) ------------------------------------------------------------------------------------
@@ -542,8 +599,14 @@ SCREENS.level = (root, params) => {
       <div class="ld-foot"><span class="stars-big">${[0, 1, 2].map((i) => `<span class="${i < (r?.stars ?? 0) ? '' : 'off'}">★</span>`).join('')}</span><span class="muted small">${r?.tempo ? `Millor: tempo ${r.tempo}` : 'Per fer-lo: ★★ (75 % de precisió)'}</span><button type="button" class="btn btn-red" data-play="${id}" tabindex="-1" style="margin-left:auto">▶ Toca <kbd>Enter</kbd></button></div>`;
     detail.querySelector('[data-play]').addEventListener('click', () => openStep(id));
   };
-  root.querySelectorAll('[data-act="play"]').forEach((el) => el.addEventListener('focus', () => show(el.dataset.id)));
-  bind(root, { play: (el) => openStep(el.dataset.id) });
+  // Teclat: Enter toca. Ratolí: el primer clic mostra el pas, el segon el toca (com a totes les llistes).
+  let shownId = null;
+  root.querySelectorAll('[data-act="play"]').forEach((el) => {
+    let wasShown = false;
+    el.addEventListener('focus', () => { show(el.dataset.id); shownId = el.dataset.id; });
+    el.addEventListener('pointerdown', () => { wasShown = shownId === el.dataset.id; });
+    el.addEventListener('click', (e) => { if (e.detail === 0 || wasShown) openStep(el.dataset.id); });
+  });
   show(params.focusKey?.startsWith('st:') ? params.focusKey.slice(3) : startId);
   const goLevel = (d) => { const n = L.n + d; if (n >= 1 && n <= ROUTE.length) nav('level', { n }, { push: false }); };
   S.screenKeys = { arrowleft: () => goLevel(-1), arrowright: () => goLevel(1) };
@@ -925,6 +988,8 @@ function openStyleCardFor(cardId, st) {
 
 function preparePlay() {
   stopSession();
+  toggleOpts(false);
+  $('help').hidden = true;
   const P = S.play;
   $('play-title').textContent = P.title;
   $('play-sub').textContent = P.sub;
@@ -964,8 +1029,9 @@ function playKeys() {
   const P = S.play;
   const list = [['Enter', 'comença / para'], ['↑↓', 'tempo']];
   if (P?.mode === 'route' && P.step.plan.choose) list.push(['←→', 'carta'], ['B', 'break']);
-  else if (P?.mode === 'route') list.push(['←→', 'pas anterior / següent']);
-  list.push(['1 2 3', 'partitura / pista / carta'], ['M', 'metrònom'], ['Esc', 'enrere']);
+  else if (P?.mode === 'route') list.push(['←→', 'pas']);
+  list.push(['1 2 3', 'vista'], ['O', 'opcions'], ['?', 'ajuda'], ['Esc', 'enrere']);
+  if (!S.hasMidi) list.unshift(['Espai F J', 'bombo · caixa · charles']);
   return list;
 }
 
@@ -1068,7 +1134,7 @@ function buildStrip() {
   const plan = P.step.plan;
   strip.innerHTML = P.bars.map((b, j) => {
     const k = barKind(plan, b);
-    return `<i class="${k}${b.partStart && j ? ' ps' : ''}" title="${esc(partLabel(b.part))} · compàs ${j + 1}"></i>`;
+    return `<i class="${k}${b.partStart && j ? ' ps' : ''}" title="${esc(partLabel(b.part))} · compàs ${j + 1} · ${barWord(plan, b) || 'ritme'}"></i>`;
   }).join('');
 }
 function stripAt(j) {
@@ -1108,8 +1174,9 @@ let soundsPromise = null;
 function loadSounds() {
   audioContext();
   soundsPromise ??= Promise.all([loadSet('bateria'), ...BAND_SETS.map(loadSet)]);
-  $('load-msg').textContent = 'Carregant els sons…';
-  soundsPromise.then(() => { $('load-msg').textContent = ''; });
+  let done = false;
+  soundsPromise.then(() => { done = true; $('load-msg').textContent = ''; if (!S.session) setGoButton('idle'); });
+  if (!done) { $('load-msg').textContent = ''; if (!S.session) setGoButton('loading'); }
   return soundsPromise;
 }
 
@@ -1182,13 +1249,16 @@ function setGoButton(state) {
   const b = $('btn-go');
   b.disabled = state === 'ending';
   b.classList.toggle('running', state === 'running');
-  b.textContent = state === 'running' ? (S.play?.mode === 'free' ? '■ Prou, ja he acabat' : '■ Para') : state === 'ending' ? 'Acabant…' : '▶ Escolta i toca';
+  b.classList.toggle('loading', state === 'loading');
+  b.textContent = state === 'running' ? (S.play?.mode === 'free' ? '■ Prou, ja he acabat' : '■ Para') : state === 'ending' ? 'Acabant…' : state === 'loading' ? 'Carregant els sons…' : '▶ Escolta i toca';
   for (const el of document.querySelectorAll('#play-controls select, #play-controls input, #play-controls .step')) el.disabled = state !== 'idle';
 }
 
 async function startSession(opts = {}) {
   const P = S.play;
   await resumeAudio();
+  toggleOpts(false);
+  if (audioContext().state !== 'running') toast('El navegador no deixa sonar el joc: clica a qualsevol lloc de la pàgina i torna-ho a provar.');
   setExtraLatency(store.settings().latency);
   if (!soundsPromise || $('load-msg').textContent) {
     $('btn-go').disabled = true;
@@ -1513,6 +1583,8 @@ function finish(sum) {
   if (deviceLag) tips.splice(0, tips.length, ...tips.filter((t) => !/avançat|endarrerit/.test(t)));
   if (deviceLag) tips.unshift(`Tots els cops cauen uns ${Math.abs(deviceLag)} ms ${deviceLag > 0 ? 'tard' : 'aviat'}, i tots igual: segurament és el retard de l'ordinador o dels altaveus, no teu. Prem «Compensa el retard».`);
   // Adaptació: ajudes
+  // Cap cop: segurament la bateria no envia notes (o no s'han fet servir les tecles)
+  if (sum.total >= 8 && !S.session.judge.hits.length) tips.unshift(S.hasMidi ? 'No ha arribat cap cop de la bateria. Revisa el cable USB i, a la configuració, toca un pad per veure si s\'encén.' : 'No ha arribat cap cop. Sense bateria, toca amb el teclat: Espai bombo, F caixa, J charles.');
   const poor = sum.stars === 0 || sum.cleanBars < sum.bars / 2;
   const actions = [];
   if ((P.mode === 'mission' && P.level) || P.mode === 'route') {
@@ -1549,6 +1621,7 @@ function finish(sum) {
       again(`Sí, ho he fet! ${next ? 'Següent pas →' : 'Full de ruta'}`, () => { rec.voiceOk = true; store.save(); goNext(); }, true);
       again('Encara no: torna-hi', () => retry());
     } else if (sum.stars >= 2) {
+      if (P.tempo < P.songTempo) tips.push(`Per acostar-te al tempo de la cançó (${P.songTempo}), tanca el resultat (Esc) i puja el tempo amb ↑.`);
       again(next ? `Següent pas: ${stepCode(next)} →` : 'Full de ruta →', goNext, true);
       again('Torna-hi', () => retry());
       if (P.tempo < P.songTempo) again(`Més ràpid (${Math.min(P.songTempo, P.tempo + 8)})`, () => { setTempo(Math.min(P.songTempo, P.tempo + 8)); retry(); });
@@ -1585,14 +1658,18 @@ function finish(sum) {
   } else {
     again('Torna-hi', () => retry(), true);
   }
-  if (deviceLag) again(`Compensa el retard (${Math.abs(deviceLag)} ms)`, () => {
+  if (deviceLag) actions.push({ lag: true, label: `Compensa el retard (${Math.abs(deviceLag)} ms)`, fn: () => {
     store.settings().latency = Math.max(-60, Math.min(300, Math.round((store.settings().latency + deviceLag) / 5) * 5));
     store.save();
     setExtraLatency(store.settings().latency);
     toast(`Fet: ara el joc compensa ${store.settings().latency} ms. Es pot canviar a la configuració.`);
     $('result').hidden = true;
-  });
-  again('Mira la carta', () => { $('result').hidden = true; $('btn-go').focus(); });
+  } });
+  // Com a molt tres botons: el principal, un altre (o compensar el retard) i «Mira la carta»
+  const main = actions.filter((a) => !a.lag);
+  const lag = actions.find((a) => a.lag);
+  actions.splice(0, actions.length, ...[main[0], lag ?? main[1]].filter(Boolean));
+  again('Mira la carta', () => { $('result').hidden = true; $('btn-go').focus(); setKeys(playKeys()); });
   $('res-tips').innerHTML = tips.slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('');
   const box = $('res-actions');
   box.innerHTML = '';
@@ -1606,6 +1683,7 @@ function finish(sum) {
   }
   $('result').hidden = false;
   setKeys([['Enter', 'botó vermell'], ['←→', 'tria'], ['Esc', 'mira la carta']]);
+  if (P.mode === 'route') setKeys([['Enter', 'botó vermell'], ['←→', 'tria'], ['Esc', 'mira la carta'], ['Esc Esc', 'tornar al nivell']]);
   (box.querySelector('.btn-primary') ?? box.querySelector('button'))?.focus();
 }
 
@@ -1638,9 +1716,9 @@ SCREENS.profile = (root, params) => {
   const tab = params.tab ?? 'resum';
   const H = (p?.history ?? []).filter((h) => h.total > 0);
   const tabs = [['resum', 'Resum'], ['coll', 'Col·lecció'], ['hist', 'Historial']];
-  root.innerHTML = `${head(`El perfil de ${name ?? ''}`, `${stepsDone()} de ${ALL_STEPS.length} passos del full de ruta · ${ALL_PATTERNS().filter(unlocked).length} patrons desbloquejats`, `<div class="tabs" role="tablist">${tabs.map(([id, t], i) => `<button type="button" class="tab" role="tab" aria-selected="${id === tab}" data-act="tab" data-tab="${id}" tabindex="-1"><kbd>${i + 1}</kbd> ${t}</button>`).join('')}</div>`)}
+  root.innerHTML = `${head(`El perfil de ${name ?? ''}`, `${stepsDone()} de ${ALL_STEPS.length} passos del full de ruta · ${ALL_PATTERNS().filter(unlocked).length} patrons desbloquejats`, `<div class="tabs" role="tablist">${tabs.map(([id, t], i) => `<button type="button" class="tab" role="tab" aria-selected="${id === tab}" data-act="tab" data-tab="${id}" data-key="tab:${id}"><kbd>${i + 1}</kbd> ${t}</button>`).join('')}</div>`)}
     <div class="scr-body" id="prof-body" style="grid-template-rows:minmax(0,1fr)"></div>`;
-  bind(root, { tab: (el) => nav('profile', { tab: el.dataset.tab }, { push: false }) });
+  bind(root, { tab: (el) => nav('profile', { tab: el.dataset.tab, focusKey: `tab:${el.dataset.tab}` }, { push: false }) });
   S.screenKeys = { 1: () => nav('profile', { tab: 'resum' }, { push: false }), 2: () => nav('profile', { tab: 'coll' }, { push: false }), 3: () => nav('profile', { tab: 'hist' }, { push: false }) };
   setKeys([['1 2 3', 'resum / col·lecció / historial'], ['↑↓←→', 'moure'], ['Enter', 'tria'], ['Esc', 'enrere']]);
   const body = $('prof-body');
@@ -1738,6 +1816,22 @@ function sparkline(vals) {
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line x1="0" x2="${w}" y1="${y75}" y2="${y75}" stroke="#3a4b6c" stroke-dasharray="4 4"/><polyline points="${pts.join(' ')}" fill="none" stroke="#ef4444" stroke-width="2"/>${pts.map((pt) => `<circle cx="${pt.split(',')[0]}" cy="${pt.split(',')[1]}" r="2.5" fill="#fdbe10"/>`).join('')}</svg>`;
 }
 
+// ---- Opcions i ajuda de la pantalla de joc ----------------------------------------------------------------------------
+function toggleOpts(on) {
+  const pop = $('opts-pop');
+  const show = on ?? pop.hidden;
+  pop.hidden = !show;
+  $('btn-opts').setAttribute('aria-expanded', String(show));
+}
+function toggleHelp(on) {
+  $('help').hidden = !on;
+  if (on) { toggleOpts(false); $('help-close').focus(); } else $('btn-go').focus();
+}
+$('btn-opts').addEventListener('click', () => toggleOpts());
+$('btn-help').addEventListener('click', () => toggleHelp(true));
+$('help-close').addEventListener('click', () => toggleHelp(false));
+document.addEventListener('pointerdown', (e) => { if (!$('opts-pop').hidden && !e.target.closest('#opts-pop, #btn-opts')) toggleOpts(false); });
+
 // ---- Dreceres de teclat (pantalla de joc) -------------------------------------------------------------------------------
 // Enter: comença / para (i, al resultat, el botó principal) · Esc: tanca el resultat, para o torna enrere
 // ↑ ↓: tempo · ← →: pas anterior / següent (al nivell 8, la carta) · 1 2 3: vistes · M metrònom · H pads · Q silenci · B break
@@ -1750,6 +1844,14 @@ window.addEventListener('keydown', (e) => {
   const idle = !running;
   const k = e.key;
   let handled = true;
+  // Ajuda oberta: Esc, Enter o ? la tanquen
+  if (!$('help').hidden) {
+    if (k === 'Escape' || k === 'Enter' || k === '?') { toggleHelp(false); e.preventDefault(); }
+    return;
+  }
+  if (k === 'Escape' && !$('opts-pop').hidden) { toggleOpts(false); e.preventDefault(); return; }
+  if (k === '?' && !running) { toggleHelp(true); e.preventDefault(); return; }
+  if ((k === 'o' || k === 'O') && !running && !resultOpen) { toggleOpts(); e.preventDefault(); return; }
   if (k === 'Enter') {
     if (resultOpen) (document.activeElement?.closest('#res-actions') ? document.activeElement : $('res-actions').querySelector('.btn-primary') ?? $('res-actions').querySelector('button'))?.click();
     else $('btn-go').click();

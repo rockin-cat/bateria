@@ -44,7 +44,7 @@
       <button type="button" id="player-chip" class="chip" tabindex="-1" hidden><i>●</i><span></span></button>
       <button type="button" id="midi-pill" class="chip pill" tabindex="-1" title="Configura la bateria"><i>●</i><span>Buscant la bateria…</span></button>
       <label class="chip toggle" title="Si la teva bateria ja sona pels seus altaveus o auriculars, deixa-ho apagat">
-        <input type="checkbox" id="my-sound" tabindex="-1"> <span>Els meus cops</span>
+        <input type="checkbox" id="my-sound" tabindex="-1"> <span>Sentir els meus cops</span>
       </label>
     </div>
   </header>
@@ -108,10 +108,14 @@
             <b id="tempo-val">80</b><span>bpm</span>
             <button type="button" class="step" id="tempo-up" aria-label="Més ràpid" tabindex="-1">+</button>
           </div>
-          <label class="ctl sel" id="band-wrap">Banda <select id="band-sel" tabindex="-1"></select></label>
-          <label class="ctl tg" title="Els pads s'encenen una mica abans de cada cop (H)"><input type="checkbox" id="hints" tabindex="-1"><span>Pads <kbd>H</kbd></span></label>
-          <label class="ctl tg" title="Metrònom (M)"><input type="checkbox" id="metro" tabindex="-1"><span>Metrònom <kbd>M</kbd></span></label>
-          <label class="ctl tg" id="quiet-wrap" title="La banda calla dos compassos de cada quatre (Q)"><input type="checkbox" id="quiet" tabindex="-1"><span>Silenci <kbd>Q</kbd></span></label>
+          <button type="button" class="ctl icon-btn" id="btn-opts" title="Opcions: banda, avís dels pads, metrònom, compte en silenci (O)" tabindex="-1">Opcions <kbd>O</kbd></button>
+          <div class="opts-pop" id="opts-pop" hidden>
+            <label class="ctl sel" id="band-wrap">Banda <select id="band-sel" tabindex="-1"></select></label>
+            <label class="ctl tg" title="Els pads del dibuix s'encenen una mica abans de cada cop (H)"><input type="checkbox" id="hints" tabindex="-1"><span>La bateria t'avisa <kbd>H</kbd></span></label>
+            <label class="ctl tg" title="Metrònom (M)"><input type="checkbox" id="metro" tabindex="-1"><span>Metrònom <kbd>M</kbd></span></label>
+            <label class="ctl tg" id="quiet-wrap" title="La banda calla dos compassos de cada quatre (Q)"><input type="checkbox" id="quiet" tabindex="-1"><span>Compte en silenci <kbd>Q</kbd></span></label>
+          </div>
+          <button type="button" class="ctl icon-btn" id="btn-help" title="Com es llegeix la carta i la partitura (?)" tabindex="-1">? Ajuda</button>
           <button type="button" class="ctl icon-btn" id="btn-full" title="Pantalla completa" tabindex="-1">⛶</button>
         </div>
       </div>
@@ -150,6 +154,39 @@
         </div>
       </div>
 
+      <div id="help" class="result help" hidden>
+        <div class="result-card help-card">
+          <h2>Com es llegeix</h2>
+          <div class="help-cols">
+            <div>
+              <h3>La carta</h3>
+              <ul class="legend">
+                <li><i style="background:#3fb4ff"></i><b>Blau</b>: bombo (peu dret)</li>
+                <li><i style="background:#79cf5a"></i><b>Verd</b>: caixa</li>
+                <li><i style="background:#ffd84d"></i><b>Groc</b>: charles (dos platets un sobre l'altre: charles obert)</li>
+                <li><i style="background:#d9536a"></i><b>Vermell</b>: crash · <i style="background:#f59f00"></i><b>Taronja</b>: ride</li>
+                <li><i style="background:#5fb3b8"></i><i style="background:#9a9a9a"></i><i style="background:#b08968"></i><b>Toms</b> 1, 2 i 3</li>
+                <li><i class="small" style="background:#79cf5a"></i><b>Rodona petita</b>: cop fluix</li>
+                <li><b>D / E</b>: mà dreta / mà esquerra</li>
+              </ul>
+              <p class="small muted">Els números de dalt són els temps (1 2 3 4). La pilota vermella salta d'un temps a l'altre: on cau, toques.</p>
+            </div>
+            <div>
+              <h3>La partitura</h3>
+              <ul class="legend">
+                <li><b>Notes amb cap de rodona</b>: bombo (a baix), caixa (al mig), toms</li>
+                <li><b>Notes amb cap en creu</b>: plats (charles, crash, ride), a dalt de tot</li>
+                <li><b>Les X de colors són els teus cops</b>: verd, a temps; taronja, una mica aviat o tard; vermell, peça equivocada o cop de més</li>
+                <li>Si la X queda <b>a l'esquerra</b> de la nota, vas avançat; <b>a la dreta</b>, endarrerit</li>
+              </ul>
+              <h3>Les tecles</h3>
+              <p class="small"><kbd>Espai</kbd> bombo · <kbd>F</kbd> caixa · <kbd>J</kbd> charles · <kbd>K</kbd> obert · <kbd>L</kbd> ride · <kbd>U</kbd> crash · <kbd>R</kbd> <kbd>T</kbd> <kbd>Y</kbd> toms · <kbd>Maj</kbd> cop fluix</p>
+            </div>
+          </div>
+          <div class="res-actions"><button type="button" class="btn btn-primary" id="help-close">D'acord <kbd>Esc</kbd></button></div>
+        </div>
+      </div>
+
       <div id="result" class="result" hidden>
         <div class="result-card">
           <div class="res-top">
@@ -178,7 +215,7 @@
 
   <footer class="keybar">
     <div class="keys" id="keys"></div>
-    <span class="ver"><span id="version">v27 · 15 d'octubre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
+    <span class="ver"><span id="version">v28 · 15 d'octubre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
   </footer>
 </body>
 </html>

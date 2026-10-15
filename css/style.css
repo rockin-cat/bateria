@@ -452,7 +452,6 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
   .poster-grid { gap: 8px 16px; padding: 10px 18px; }
 }
 @media (max-width: 1100px) {
-  .ctl.sel { display: none; }
   .play-controls .tg span kbd { display: none; }
   .song-chip { display: none; }
 }
@@ -554,3 +553,27 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .smap-legend em { font-style: normal; display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
 .smap-legend em span { margin-right: 4px; }
 .smap-legend em b { color: var(--ink); font-weight: 700; }
+
+/* Opcions del joc (desplegable) i ajuda */
+.play-controls { position: relative; }
+.opts-pop { position: absolute; right: 0; top: 38px; z-index: 6; display: flex; flex-direction: column; gap: 6px; padding: 10px; background: var(--panel); border: 1px solid var(--line2); border-radius: 10px; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); }
+.opts-pop .ctl { justify-content: flex-start; }
+#btn-opts[aria-expanded="true"] { border-color: var(--red); color: var(--ink); }
+.help-card { width: min(900px, 100%); }
+.help-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.legend { list-style: none; padding: 0; margin: 6px 0 8px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink2); }
+.legend b { color: var(--ink); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 6px; }
+.legend i.small { width: 8px; height: 8px; vertical-align: 1px; margin: 0 9px 0 3px; }
+.btn-go.loading { opacity: .7; }
+/* Com es juga */
+.howto { flex: 1; display: grid; place-items: center; }
+.howto-box { width: min(1060px, 100%); display: flex; flex-direction: column; gap: 16px; }
+.howto-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.howto-steps .panel { display: flex; flex-direction: column; gap: 8px; }
+.howto-steps .num { width: 34px; height: 34px; font-size: 16px; }
+.howto-steps h2 { font-size: 18px; margin: 0; }
+.howto-steps p { color: var(--ink2); margin: 0; }
+.howto-steps .thumb { margin-top: 4px; }
+.howto-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; color: var(--ink2); }
+.song-listen { display: flex; gap: 8px; }
