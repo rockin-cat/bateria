@@ -1340,11 +1340,13 @@ async function startSession(opts = {}) {
   // La frase: escoltes els compassos 1-2-3 i el 4t és l'entrada (baquetes, o el break si n'hi toca).
   // Així, quan entres, la progressió torna a començar i no es perd l'ordre dels acords.
   const L = phrase === 3 ? 3 : 4;
-  const countBar = (demoBar ?? playBar)(L - 1);
+  // La cançó sencera: sense demostració, un compàs d'entrada de baquetes (la banda calla) i comença des del primer compàs
+  const whole = P.mode === 'route' && P.step.id === 'canco';
+  const countBar = whole ? { card: null, chord: null } : (demoBar ?? playBar)(L - 1);
   const cfg = {
     tempo: P.tempo,
     band: P.band,
-    demoBars: opts.quick ? 0 : L - 1,
+    demoBars: opts.quick || whole ? 0 : L - 1,
     playBars: P.playBars,
     playBar,
     demoBar,
