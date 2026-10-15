@@ -154,7 +154,7 @@ function recommended() {
 }
 const levelDone = (L) => L.passos.filter((p) => stepDone(p.id)).length;
 const stepsDone = () => ALL_STEPS.filter((s) => stepDone(s.id)).length;
-const stepCode = (st) => `${st.level.n}${st.id.slice(-1)}`;
+const stepCode = (st) => (st.id === 'canco' ? '♪' : `${st.level.n}${st.id.slice(-1)}`);
 
 function setSong(raw) {
   const p = player();
@@ -299,7 +299,7 @@ SCREENS.home = (root) => {
   ];
   root.innerHTML = `<div class="scr-body home">
     <div class="panel next-panel">
-      ${raw ? `<div class="song-box"><div class="disc"></div><div class="t"><small>La teva cançó</small><b>${esc(raw.titol)}</b><span>${esc(raw.artista || 'Cançó pròpia')} · tempo ${song.songTempo} · ${esc(BANDS[song.band]?.name ?? song.band)}</span><div class="parts">${parts.slice(0, 10).map((p) => `<span class="part">${esc(partLabel(p.name) || '—')}<i>${p.bars.length}</i></span>`).join('')}${parts.length > 10 ? '<span class="part">…</span>' : ''}</div></div><button type="button" class="btn btn-ghost" data-act="song" data-key="song">Canvia <kbd>C</kbd></button></div>`
+      ${raw ? `<div class="song-box"><div class="disc"></div><div class="t"><small>La teva cançó</small><b>${esc(raw.titol)}</b><span>${esc(raw.artista || 'Cançó pròpia')} · tempo ${song.songTempo} · ${esc(BANDS[song.band]?.name ?? song.band)}</span><div class="parts">${parts.slice(0, 10).map((p) => `<span class="part">${esc(partLabel(p.name) || '—')}<i>${p.bars.length}</i></span>`).join('')}${parts.length > 10 ? '<span class="part">…</span>' : ''}</div></div><div class="row" style="margin:0"><button type="button" class="btn" data-act="whole" data-key="whole">▶ Toca-la sencera <kbd>G</kbd></button><button type="button" class="btn btn-ghost" data-act="song" data-key="song">Canvia <kbd>C</kbd></button></div></div>`
         : `<div class="song-box"><div class="disc"></div><div class="t"><small>Primer de tot</small><b>Tria la teva cançó</b><span>Tot el full de ruta es fa sobre una cançó: la que toqueu amb el grup.</span></div></div>`}
       <div class="step-head">
         <span class="lvl-tag"><span class="num">${L.n}</span>Nivell ${L.n} · ${esc(L.titol)}</span>
@@ -331,11 +331,11 @@ SCREENS.home = (root) => {
       <div class="list">${menu.map(([ic, k, t, sub], i) => `<button type="button" class="item" data-act="m${i}" data-key="m${i}"><span class="ic">${icon(ic)}</span><span class="tx"><b>${esc(t)}</b><small>${esc(sub)}</small></span><kbd class="k">${k}</kbd></button>`).join('')}</div>
     </div>
   </div>`;
-  const acts = { go: () => (raw ? openStep(st.id) : nav('song')), song: () => nav('song'), map: () => nav('map'), who: () => nav('who') };
+  const acts = { go: () => (raw ? openStep(st.id) : nav('song')), song: () => nav('song'), whole: () => openStep('canco'), map: () => nav('map'), who: () => nav('who') };
   menu.forEach((m, i) => { acts[`m${i}`] = m[4]; });
   bind(root, acts);
-  S.screenKeys = Object.fromEntries([...menu.map((m) => [m[1].toLowerCase(), m[4]]), ['j', () => nav('who')]]);
-  setKeys([['Enter', raw ? 'continua el full de ruta' : 'tria la cançó'], ['↑↓←→', 'moure'], ['R Q C B T E P S A', 'dreceres']]);
+  S.screenKeys = Object.fromEntries([...menu.map((m) => [m[1].toLowerCase(), m[4]]), ['j', () => nav('who')], ['g', () => (raw ? openStep('canco') : nav('song'))]]);
+  setKeys([['Enter', raw ? 'continua el full de ruta' : 'tria la cançó'], ['↑↓←→', 'moure'], ['G', 'cançó sencera'], ['R Q C B T E P S A', 'dreceres']]);
 };
 
 // ---- Com es juga (la primera vegada, i des de l'inici amb A) ------------------------------------------------------
@@ -873,11 +873,11 @@ function openStep(id, opts = {}) {
     songTempo: song.songTempo,
     band: song.band,
     supports: p?.routeSupports ?? 1,
-    viewType: p?.viewType ?? 'score',
+    viewType: step.id === 'canco' ? 'guio' : (p?.viewType === 'guio' ? 'score' : p?.viewType ?? 'score'),
     metronome: step.level.n === 1 && !rec,
     quiet: false,
     title: `${stepCode(step)} · ${step.titol}`,
-    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''}${midiEvents ? ' (MIDI)' : ''} · ${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'} · Nivell ${step.level.n}: ${step.level.titol}`,
+    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''}${midiEvents ? ' (MIDI)' : ''} · ${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'}${step.level.n ? ` · Nivell ${step.level.n}: ${step.level.titol}` : ''}`,
     playBars: bars.length,
     form,
     roles,
@@ -1012,6 +1012,8 @@ function preparePlay() {
   $('quiet-wrap').hidden = P.mode === 'route' || P.mode === 'tempo';
   buildCards();
   buildStrip();
+  buildGuio();
+  if (P.viewType === 'guio' && !(P.mode === 'route' && P.form)) { P.viewType = 'score'; applyView(); }
   syncChoose();
   lanes.setLanes(lanesOf(...P.cards));
   kit.setUsed(P.cards.flatMap((c) => Object.keys(c.notes)));
@@ -1040,7 +1042,7 @@ function playKeys() {
   const list = [['Enter', 'comença / para'], ['↑↓', 'tempo']];
   if (P?.mode === 'route' && P.step.plan.choose) list.push(['←→', 'carta'], ['B', 'break']);
   else if (P?.mode === 'route') list.push(['←→', 'pas']);
-  list.push(['1 2 3', 'vista'], ['O', 'opcions'], ['?', 'ajuda'], ['Esc', 'enrere']);
+  list.push([P?.form ? '1 2 3 4' : '1 2 3', 'vista'], ['O', 'opcions'], ['?', 'ajuda'], ['Esc', 'enrere']);
   if (!S.hasMidi) list.unshift(['Espai F J', 'bombo · caixa · charles']);
   return list;
 }
@@ -1147,7 +1149,25 @@ function buildStrip() {
     return `<i class="${k}${b.partStart && j ? ' ps' : ''}" title="${esc(partLabel(b.part))} · compàs ${j + 1} · ${barWord(plan, b) || 'ritme'}"></i>`;
   }).join('');
 }
+/** El guió: l'estructura de la cançó, part per part, com a la biblioteca (acords i què fa la bateria). */
+function buildGuio() {
+  const P = S.play;
+  const box = $('guio-wrap');
+  const on = P.mode === 'route' && P.form;
+  $('vt-guio').hidden = !on;
+  if (!on) { box.innerHTML = ''; return; }
+  const plan = P.step.plan;
+  const rows = [];
+  P.bars.forEach((b, j) => { if (b.partStart || !rows.length) rows.push({ part: b.part, bars: [] }); rows[rows.length - 1].bars.push({ ...b, j }); });
+  box.innerHTML = rows.map((r, ri) => `<div class="guio-part" data-row="${ri}"><b>${esc(partLabel(r.part) || '—')}</b><div class="guio-bars">${r.bars.map((b) => { const w = barWord(plan, b); return `<span class="k-${barKind(plan, b) || 'g'}" data-j="${b.j}">${esc(b.chord?.name ?? '')}${w ? `<i>${esc(w)}</i>` : ''}</span>`; }).join('')}</div></div>`).join('');
+}
 function stripAt(j) {
+  for (const el of $('guio-wrap').querySelectorAll('[data-j]')) {
+    const k = Number(el.dataset.j);
+    el.classList.toggle('now', k === j);
+    el.classList.toggle('past', j != null && k < j);
+    if (k === j) el.scrollIntoView({ block: 'nearest' });
+  }
   const items = $('bar-strip').children;
   for (let i = 0; i < items.length; i++) {
     items[i].classList.toggle('now', i === j);
@@ -1619,7 +1639,10 @@ function finish(sum) {
   const retry = (quick = true) => { $('result').hidden = true; startSession({ quick }); };
   const voiceBox = $('res-voice');
   voiceBox.hidden = true;
-  if (P.mode === 'route') {
+  if (P.mode === 'route' && P.step.id === 'canco') {
+    again('Torna-hi', () => retry(), true);
+    if (P.tempo < P.songTempo) again(`Més ràpid (${Math.min(P.songTempo, P.tempo + 8)})`, () => { setTempo(Math.min(P.songTempo, P.tempo + 8)); retry(); });
+  } else if (P.mode === 'route') {
     const st = P.step;
     const i = ALL_STEPS.findIndex((x) => x.id === st.id);
     const next = ALL_STEPS[i + 1];
@@ -1887,8 +1910,9 @@ window.addEventListener('keydown', (e) => {
     const list = [...P.style.cards.map((c) => c.id), ...P.style.also];
     const i = list.indexOf(P.cardId) + (k === 'ArrowRight' ? 1 : -1);
     if (i >= 0 && i < list.length) openStyleCardFor(list[i], P.style);
-  } else if (k === '1' || k === '2' || k === '3') {
-    document.querySelector(`.vt[data-vt="${{ 1: 'score', 2: 'lanes', 3: 'none' }[k]}"]`)?.click();
+  } else if (k === '1' || k === '2' || k === '3' || k === '4') {
+    const b = document.querySelector(`.vt[data-vt="${{ 1: 'score', 2: 'lanes', 3: 'none', 4: 'guio' }[k]}"]`);
+    if (b && !b.hidden) b.click();
   } else if ((k === 'm' || k === 'M') && idle) {
     $('metro').checked = !$('metro').checked;
     P.metronome = $('metro').checked;

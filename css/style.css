@@ -592,3 +592,21 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .lvl-steps li.now { color: var(--ink); font-weight: 700; }
 .lvl-steps li.now span { background: var(--red); border-color: var(--red); color: #fff; }
 .home-map h3 { margin: 4px 0 6px; }
+
+/* Guió de la cançó (la cançó sencera) */
+.stage:not([data-vt="guio"]) .guio-wrap { display: none; }
+.guio-wrap { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px 6px; scrollbar-width: thin; }
+.guio-part { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: start; }
+.guio-part > b { font-size: 13px; color: var(--red2); text-transform: uppercase; letter-spacing: .08em; padding-top: 8px; }
+.guio-bars { display: flex; flex-wrap: wrap; gap: 5px; }
+.guio-bars span { min-width: 58px; padding: 6px 6px 4px; border-radius: 6px; background: #0b111d; border: 1px solid var(--line2); border-bottom: 3px solid #3a4b6c; font: 700 17px Ubuntu, sans-serif; text-align: center; display: flex; flex-direction: column; line-height: 1.1; transition: background .1s; }
+.guio-bars span i { font-style: normal; font-size: 10.5px; font-weight: 500; color: var(--ink2); }
+.guio-bars .k-c { border-bottom-color: #3fb4ff; }
+.guio-bars .k-f { border-bottom-color: #f59f00; }
+.guio-bars .k-v { border-bottom-color: #8b7cf6; }
+.guio-bars .k-m { border-bottom-color: var(--red); }
+.guio-bars .k-s { border: 1px dashed var(--red); border-bottom-width: 3px; }
+.guio-bars span.past { opacity: .4; }
+.guio-bars span.now { background: var(--red); border-color: var(--red); color: #fff; transform: scale(1.06); }
+.guio-bars span.now i { color: #fff; }
+.guio-part.cur > b { color: #fff; }

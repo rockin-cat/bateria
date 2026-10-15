@@ -140,7 +140,15 @@ export function stepSong(step, song) {
 }
 
 export const ALL_STEPS = ROUTE.flatMap((l) => l.passos.map((p) => ({ ...p, level: l })));
-export const stepById = (id) => ALL_STEPS.find((s) => s.id === id);
+/** Tocar la cançó sencera, de principi a final, amb el patró i el break que triïs (fora del full de ruta). */
+export const SONG_STEP = {
+  id: 'canco', titol: 'La cançó sencera',
+  text: 'Toca tota la cançó de principi a final amb el patró i el break que triïs. Segueix el guió: l’estructura de la cançó, part per part.',
+  com: ['Amb ←→ tries la carta i amb B el break, abans de començar.', 'El break va a l’últim compàs de cada part.'],
+  plan: { choose: true },
+  level: { n: 0, titol: 'La cançó sencera', passos: [] },
+};
+export const stepById = (id) => (id === 'canco' ? SONG_STEP : ALL_STEPS.find((s) => s.id === id));
 
 export const isChorus = (part) => /^(b|tornada|chorus|estribillo|coro)\b/i.test(String(part ?? '').trim());
 
