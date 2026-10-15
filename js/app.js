@@ -485,7 +485,7 @@ SCREENS.song = (root, params) => {
     let buf = null;
     let made = null;
     const build = () => {
-      if (!buf) return;
+      if (!buf || !$('mf-msg')) return;
       try {
         const ms = songFromMidi(buf, $('mf-parts').value);
         const titol = $('mf-title').value.trim() || ($('mf-file').files[0]?.name ?? 'Cançó MIDI').replace(/\.midi?$/i, '');
@@ -501,6 +501,7 @@ SCREENS.song = (root, params) => {
       if (!f) return;
       if (f.size > 400000) { $('mf-msg').textContent = 'El fitxer és massa gran (més de 400 kB).'; return; }
       buf = await f.arrayBuffer();
+      if (!$('mf-title')) return;
       if (!$('mf-title').value) $('mf-title').value = f.name.replace(/\.midi?$/i, '');
       build();
     });
@@ -510,12 +511,15 @@ SCREENS.song = (root, params) => {
   } else if (src === 'biblio') {
     const code = savedCode();
     mid.innerHTML = `<h3>Biblioteca del professorat</h3><form class="song-form" id="lib-form"><label>Codi del professorat <input type="text" id="lib-code" value="${esc(code)}" autocomplete="off"></label><button type="submit" class="btn">Obre la biblioteca</button></form><p id="lib-msg" class="muted small"></p><div class="list scroll" id="lib-list"></div>`;
+    // La biblioteca respon tard: si mentrestant s'ha canviat de pantalla, no es toca res
+    const libMsg = (t) => { const e = $('lib-msg'); if (e) e.textContent = t; };
     const open = async (c) => {
-      $('lib-msg').textContent = 'Obrint la biblioteca…';
+      libMsg('Obrint la biblioteca…');
       try {
         const list = await listLibrary(c);
         saveCode(c);
-        $('lib-msg').textContent = list.length ? `${list.length} cançons. 🥁 = porta patró de bateria.` : 'La biblioteca és buida.';
+        libMsg(list.length ? `${list.length} cançons. 🥁 = porta patró de bateria.` : 'La biblioteca és buida.');
+        if (!$('lib-list')) return;
         $('lib-list').innerHTML = list.map((it, i) => `<button type="button" class="item" data-i="${i}" data-key="b:${esc(it.id)}"><span class="ic">${icon('cloud')}</span><span class="tx"><b>${esc(it.titol || it.nom)}</b><small>${esc(it.artista || '')}${it.autor ? ' · ' + esc(it.autor) : ''}</small></span>${(it.instruments ?? []).includes('bateria') ? '<span class="k">🥁</span>' : ''}</button>`).join('');
         const loaded = new Map();
         const load = async (it) => {
@@ -529,16 +533,16 @@ SCREENS.song = (root, params) => {
         $('lib-list').querySelectorAll('[data-i]').forEach((el) => {
           const it = list[Number(el.dataset.i)];
           const go = async (pick) => {
-            $('lib-msg').textContent = `Obrint «${it.titol || it.nom}»…`;
-            try { const raw = await load(it); $('lib-msg').textContent = ''; if (pick) choose(raw); else if (document.activeElement === el || !pick) preview(raw); } catch (err) { $('lib-msg').textContent = errorText(err); }
+            libMsg(`Obrint «${it.titol || it.nom}»…`);
+            try { const raw = await load(it); libMsg(''); if (pick) choose(raw); else if (document.activeElement === el || !pick) preview(raw); } catch (err) { libMsg(errorText(err)); }
           };
           el.addEventListener('click', (e) => go(e.detail === 0));
           el.addEventListener('dblclick', () => go(true));
         });
         $('lib-list').querySelector('.item')?.focus();
-      } catch (err) { $('lib-msg').textContent = errorText(err); }
+      } catch (err) { libMsg(errorText(err)); }
     };
-    $('lib-form').addEventListener('submit', (e) => { e.preventDefault(); const c = $('lib-code').value.trim(); if (!c) { $('lib-msg').textContent = errorText(new Error('sense-codi')); return; } open(c); });
+    $('lib-form').addEventListener('submit', (e) => { e.preventDefault(); const c = $('lib-code').value.trim(); if (!c) { libMsg(errorText(new Error('sense-codi'))); return; } open(c); });
     preview(null);
     if (code) open(code);
   }

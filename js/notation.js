@@ -70,7 +70,8 @@ export function createNotation(root) {
     // Cops de l'alumnat: una X a la línia de la peça que has tocat, just al moment en què l'has tocat.
     // Si cau sobre la nota, has anat a temps; si queda a la dreta, tard; a l'esquerra, aviat.
     for (const h of hits) {
-      const x = xAt(h.slot, h.beat);
+      // Un cop avançat al temps 1 es dibuixa just a l'esquerra de la nota (sense trepitjar el compàs 4/4 ni la barra)
+      const x = xAt(h.slot, Math.max(h.beat, -0.18));
       const y = yOf(POS[h.piece] ?? 5);
       const c = h.kind === 'extra' || h.kind === 'wrong' ? '#d64545' : h.kind === 'perfect' ? '#1f9d55' : '#f08c00';
       s += `<g class="hit-x" opacity=".85"><path d="M${x - 6} ${y - 6} L${x + 6} ${y + 6} M${x + 6} ${y - 6} L${x - 6} ${y + 6}" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M${x - 6} ${y - 6} L${x + 6} ${y + 6} M${x + 6} ${y - 6} L${x - 6} ${y + 6}" stroke="${c}" stroke-width="3" stroke-linecap="round"/></g>`;
