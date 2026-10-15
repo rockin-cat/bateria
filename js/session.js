@@ -17,7 +17,7 @@ const VISUAL_AHEAD = 3; // compassos generats per endavant per a la pista
 /**
  * cfg: {
  *   tempo, band, demoBars, playBars (Infinity = lliure),
- *   playBar(j) -> { card, chord, part? },   // què toca el compàs j de la part «toques tu»
+ *   playBar(j) -> { card (null = solo), chord, part?, stop? },  demoBar(j): el mateix per a la demostració,   // què toca el compàs j de la part «toques tu»
  *   countBar: { card, chord },   // el compàs d'entrada (l'últim de la frase: si és un break, el toca el joc)
  *   endChord,
  *   metronome: bool, quiet: bool (compte silenciós), demoInPlay: bool (la bateria del joc també sona mentre toques)
@@ -41,10 +41,10 @@ export function createSession(cfg, hooks = {}) {
   const barStart = (i) => t0 + i * barDur;
 
   function info(i) {
-    if (i < D) return { kind: 'demo', j: i, ...cfg.playBar(i) };
+    if (i < D) return { kind: 'demo', j: i, ...(cfg.demoBar ?? cfg.playBar)(i) };
     if (i === D) {
       const cb = cfg.countBar ?? { card: cfg.playBar(0).card, chord: cfg.playBar(0).chord };
-      return { kind: 'count', j: -1, card: cb.card, chord: cb.chord, entryBreak: !!cb.card?.brk };
+      return { kind: 'count', j: -1, card: cb.card, chord: cb.chord, songBar: cb.songBar, role: cb.role, pickup: cb.pickup, stop: cb.stop, entryBreak: !!cb.card?.brk };
     }
     if (i < stopBarIndex) {
       const j = i - D - 1;
@@ -85,9 +85,14 @@ export function createSession(cfg, hooks = {}) {
     if (!b) return;
     const start = b.start;
     // Banda
-    const kind = b.kind === 'end' ? 'end' : 'play';
-    if (!(b.kind === 'play' && b.quiet)) {
-      for (const e of barEvents(cfg.band, b.chord, kind)) {
+    const kind = b.kind === 'end' ? 'end' : b.stop ? 'stop' : 'play';
+    const beats = b.stop && b.card ? [...new Set((b.card.notes.crash ?? [0]).map((st) => st / (b.card.grid / 4)))] : undefined;
+    // Cançó d'un MIDI: sona el MIDI (sense la bateria) en lloc de la banda generada
+    const midiEvs = cfg.midiBar && b.songBar != null && b.kind !== 'end' && !(b.kind === 'play' && b.quiet) ? cfg.midiBar(b.songBar, { stop: b.stop, beats }) : null;
+    if (midiEvs) {
+      for (const e of midiEvs) tone(e.inst, e.pitch, start + e.beat * spb, e.dur * spb, { gain: e.gain });
+    } else if (!(b.kind === 'play' && b.quiet)) {
+      for (const e of barEvents(cfg.band, b.chord, kind, { beats, role: b.role, pickup: b.pickup && !b.stop })) {
         const t = start + e.beat * spb;
         const dur = e.dur * spb;
         e.notes.forEach((m, k) => {

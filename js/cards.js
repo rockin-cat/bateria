@@ -58,7 +58,7 @@ export const card = (id) => CARDS.get(id);
 export function cardLabel(c) {
   if (!c) return '';
   if (c.style) return c.name;
-  if (c.drawn && c.id.startsWith('w')) return `Escalfament ${c.num.slice(1)}`;
+  if (c.drawn && c.id.startsWith('w')) return `Escalfament ${c.num}`;
   if (c.brk) return c.num;
   if (c.id.startsWith('s')) return `Shuffle ${c.num.split(' ')[0]}`;
   if (c.id.startsWith('toms')) return 'Toms 1';

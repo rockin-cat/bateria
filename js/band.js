@@ -293,6 +293,10 @@ const STYLE = {
 };
 
 /** El final: tothom toca l'acord i el deixa sonar. */
+/** Marques (nivell 9): tota la banda fa un cop curt a cada `beat` i calla. */
+function stopHits(c, beats) {
+  return beats.flatMap((b) => [ev('baix', b, 0.45, bassRoot(c), 0.65), ev('rhodes', b, 0.5, keys(c), 0.2), ev('acustica', b, 0.4, strumNotes(c), 0.22, { strum: 0.012 })]);
+}
 function ending(c) {
   return [ev('baix', 0, 3, bassRoot(c), 0.6), ev('rhodes', 0, 3.2, keys(c), 0.18), ev('acustica', 0, 3.2, strumNotes(c), 0.2, { strum: 0.02 })];
 }
@@ -301,8 +305,33 @@ function ending(c) {
  * Què toca la banda en un compàs. `kind`: 'play' (normal), 'end' (acord final).
  * Torna esdeveniments amb `beat` relatiu a l'inici del compàs.
  */
-export function barEvents(bandId, chord, kind = 'play') {
+export function barEvents(bandId, chord, kind = 'play', opts = {}) {
   if (!chord) return [];
   if (kind === 'end') return ending(chord);
-  return (STYLE[bandId] ?? STYLE.rock)(chord, BANDS[bandId]);
+  if (kind === 'stop') return stopHits(chord, opts.beats ?? [0]);
+  const evs = (STYLE[bandId] ?? STYLE.rock)(chord, BANDS[bandId]);
+  return opts.role || opts.pickup ? arrange(evs, chord, opts.role, opts.pickup) : evs;
+}
+
+/**
+ * La banda marca l'estructura de la cançó (com en un assaig, on el bateria es guia per la banda):
+ *   intro: baix llarg i teclat, molt suau · estrofa: més buida (la guitarra distorsionada només als temps 1 i 3, la resta més fluix)
+ *   tornada: tot, i un coixí de teclat al damunt · pickup: l'últim compàs de la part acaba amb una pujada al temps 4.
+ */
+function arrange(evs, c, role, pickup) {
+  let out = evs;
+  if (role === 'intro') out = [ev('baix', 0, 3.8, bassRoot(c), 0.42), ev('rhodes', 0, 3.9, keys(c), 0.13)];
+  else if (role === 'verse') {
+    out = evs.filter((e) => e.inst !== 'guitarra_dist' || e.beat % 2 === 0).map((e) => (e.inst === 'baix' ? e : { ...e, gain: e.gain * 0.6 }));
+  } else if (role === 'chorus') {
+    out = [...evs.map((e) => ({ ...e, gain: e.gain * 1.1 })), ev('rhodes', 0, 3.9, keys(c), 0.11)];
+    if (!evs.some((e) => e.inst === 'guitarra_dist')) out.push(...[0, 2].map((b) => ev('acustica', b, 0.9, strumNotes(c), 0.16, { strum: 0.01 })));
+  }
+  if (pickup) {
+    out = out.filter((e) => e.beat < 3).map((e) => ({ ...e, dur: Math.min(e.dur, 3 - e.beat) }));
+    out.push(ev('baix', 3, 0.45, bassRoot(c), 0.6), ev('baix', 3.5, 0.45, bassRoot(c) + 12, 0.6));
+    out.push(ev('acustica', 3, 0.4, strumNotes(c), 0.2, { strum: 0.01 }), ev('acustica', 3.5, 0.4, strumNotes(c), 0.26, { strum: 0.01 }));
+    out.push(ev('rhodes', 3, 0.9, keys(c), 0.16));
+  }
+  return out;
 }

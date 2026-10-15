@@ -70,7 +70,8 @@ export function createNotation(root) {
     // Cops de l'alumnat: una X a la línia de la peça que has tocat, just al moment en què l'has tocat.
     // Si cau sobre la nota, has anat a temps; si queda a la dreta, tard; a l'esquerra, aviat.
     for (const h of hits) {
-      const x = xAt(h.slot, h.beat);
+      // Un cop avançat al temps 1 es dibuixa just a l'esquerra de la nota (sense trepitjar el compàs 4/4 ni la barra)
+      const x = xAt(h.slot, Math.max(h.beat, -0.18));
       const y = yOf(POS[h.piece] ?? 5);
       const c = h.kind === 'extra' || h.kind === 'wrong' ? '#d64545' : h.kind === 'perfect' ? '#1f9d55' : '#f08c00';
       s += `<g class="hit-x" opacity=".85"><path d="M${x - 6} ${y - 6} L${x + 6} ${y + 6} M${x + 6} ${y - 6} L${x - 6} ${y + 6}" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M${x - 6} ${y - 6} L${x + 6} ${y + 6} M${x + 6} ${y - 6} L${x - 6} ${y + 6}" stroke="${c}" stroke-width="3" stroke-linecap="round"/></g>`;
@@ -198,8 +199,12 @@ export function createNotation(root) {
         const hits = [];
         for (const h of session.judge?.hits ?? []) {
           const x = (h.time - session.t0) / session.barDur;
-          const bar = Math.floor(x);
-          if (bar === first || bar === first + 1) hits.push({ slot: bar - first, beat: (x - bar) * 4, kind: h.kind, piece: h.piece });
+          // Un cop una mica avançat al temps 1 pertany al compàs següent: es dibuixa just abans de la seva nota
+          // (si no, quedaria a l'altra banda de la barra de compàs, o fins i tot a la pàgina anterior).
+          let bar = Math.floor(x);
+          let beat = (x - bar) * 4;
+          if (beat > 3.5) { bar += 1; beat -= 4; }
+          if (bar === first || bar === first + 1) hits.push({ slot: bar - first, beat, kind: h.kind, piece: h.piece });
         }
         render(bars, { hits, labels });
       }
