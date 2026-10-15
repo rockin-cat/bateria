@@ -1,5 +1,5 @@
 // El full de ruta de bateria: els 10 nivells del pòster «Bateria · Percussió · Full de ruta · Nivells»
-// (En Directe. Música als Instituts). Tots els passos es fan sobre la cançó triada: la cançó no canvia mai,
+// (versió de Rockin). Tots els passos es fan sobre la cançó triada: la cançó no canvia mai,
 // el que canvia és què hi toca la bateria.
 //
 // Cada pas té un `plan` que diu, compàs a compàs, quina carta es toca:

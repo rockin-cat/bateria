@@ -565,7 +565,7 @@ SCREENS.map = (root, params) => {
       const d = levelDone(L);
       return `<button type="button" class="ptile${L.n === cur ? ' cur' : ''}${d === L.passos.length ? ' done' : ''}" data-act="lv" data-n="${L.n}" data-key="lv${L.n}"${L.n === cur ? ' data-autofocus' : ''}><span class="num">${d === L.passos.length ? '✓' : L.n}</span><b>${esc(L.titol)}</b><small>${esc(L.sub)}</small><span class="pb"><span class="bar"><i style="width:${(d / L.passos.length) * 100}%"></i></span>${d}/${L.passos.length}</span><span class="pi">${icon(L.icon)}</span></button>`;
     }).join('')}</div>
-    <div class="poster-foot"><span>ENDIRECTE: MÚSICA ALS INSTITUTS${currentSong() ? ' · ' + esc(currentSong().titol.toUpperCase()) : ''}</span><em>Pugem de nivell?</em></div>
+    <div class="poster-foot"><span>ROCKIN · [R]EVOLUCIONEM LA MÚSICA${currentSong() ? ' · ' + esc(currentSong().titol.toUpperCase()) : ''}</span><em>Pugem de nivell?</em></div>
   </div>`;
   bind(root, { lv: (el) => nav('level', { n: Number(el.dataset.n) }) });
   setKeys([['↑↓←→', 'nivell'], ['Enter', 'obre el nivell'], ['Esc', 'enrere']]);
