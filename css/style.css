@@ -548,3 +548,9 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .level .level-detail .ld-text { grid-column: 2; grid-row: 2; max-height: none; }
 .level .level-detail .ld-cards { align-items: flex-start; }
 .np-cards { align-items: flex-start; }
+
+.smap-bars span { justify-content: center; min-height: 30px; }
+.smap-bars span i { color: var(--ink2); text-transform: lowercase; }
+.smap-legend em { font-style: normal; display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
+.smap-legend em span { margin-right: 4px; }
+.smap-legend em b { color: var(--ink); font-weight: 700; }

@@ -21,7 +21,12 @@ import { summary as skillSummary } from './skills.js';
 
 // Cada pas es toca sobre la roda de la cançó o, si cal l'estructura, sobre la cançó sencera.
 const stepBars = (step, song, choice) => rawStepBars(step, stepSong(step, song), choice);
-const stepCards = (step, song, choice) => rawStepCards(step, stepSong(step, song), choice);
+// Les cartes d'un pas, la que més es toca primer (la gran)
+const stepCards = (step, song, choice) => {
+  const bars = rawStepBars(step, stepSong(step, song), choice);
+  const n = (c) => bars.filter((b) => b.card?.id === c.id).length;
+  return rawStepCards(step, stepSong(step, song), choice).sort((a, b) => n(b) - n(a));
+};
 
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1028,16 +1033,31 @@ function barKind(plan, b) {
   if ((plan.first && b.card?.id === plan.first.card) || (plan.parts && b.card?.id === plan.parts[1])) return 'c';
   return '';
 }
-const KIND_NAME = { '': 'ritme', c: 'crash / tornada', f: 'break', v: 'variació', m: 'marca', s: 'solo' };
-/** El mapa de la cançó en aquest pas: una fila per part, una casella per compàs (l'acord, pintat segons la carta). */
+/** Què fa la bateria en un compàs especial, en una paraula (els compassos de ritme no en porten). */
+function barWord(plan, b) {
+  const k = barKind(plan, b);
+  if (k === 's') return 'solo';
+  if (k === 'm') return 'marca';
+  if (k === 'f') return 'break';
+  if (k === 'v') return 'variació';
+  if (k === 'c') return plan.parts ? 'tornada' : 'crash';
+  return '';
+}
+/** El mapa de la cançó en aquest pas: una fila per part, una casella per compàs amb l'acord.
+ *  Els compassos on la bateria fa una cosa diferent del ritme porten la paraula (crash, break, solo…). */
 function songMap(step, song, choice) {
   const bars = stepBars(step, song, choice);
   const rows = [];
   bars.forEach((b, j) => { if (b.partStart || !rows.length) rows.push({ part: b.part, bars: [] }); rows[rows.length - 1].bars.push({ ...b, j }); });
-  const kinds = new Set(bars.map((b) => barKind(step.plan, b)));
-  const short = (c) => (c ? (c.style ? c.name : c.brk ? c.num : c.num) : 'solo');
-  return `<div class="smap">${rows.map((r) => `<div class="smap-row"><b>${esc(partLabel(r.part) || '—')}</b><div class="smap-bars">${r.bars.map((b) => `<span class="k-${barKind(step.plan, b) || 'g'}" title="Compàs ${b.j + 1} · ${esc(b.solo ? 'Solo' : cardLabel(b.card))}">${esc(b.chord?.name ?? '')}<i>${esc(short(b.card))}</i></span>`).join('')}</div></div>`).join('')}</div>
-    <div class="smap-legend">${[...kinds].map((k) => `<span class="k-${k || 'g'}"></span>${KIND_NAME[k]}`).join(' ')}</div>`;
+  // Llegenda: cada tipus de compàs amb la carta que s'hi toca
+  const legend = new Map();
+  for (const b of bars) {
+    const w = barWord(step.plan, b);
+    if (!legend.has(w)) legend.set(w, { k: barKind(step.plan, b), card: b.solo ? null : b.card });
+  }
+  const what = (w, card) => `${w ? `<b>${esc(w)}</b>: ` : '<b>ritme</b>: '}${card ? esc(cardLabel(card)) : 'toques el que vulguis'}`;
+  return `<div class="smap">${rows.map((r) => `<div class="smap-row"><b>${esc(partLabel(r.part) || '—')}</b><div class="smap-bars">${r.bars.map((b) => { const w = barWord(step.plan, b); return `<span class="k-${barKind(step.plan, b) || 'g'}" title="Compàs ${b.j + 1} · ${esc(b.solo ? 'Solo' : cardLabel(b.card))}">${esc(b.chord?.name ?? '')}${w ? `<i>${esc(w)}</i>` : ''}</span>`; }).join('')}</div></div>`).join('')}</div>
+    <div class="smap-legend">${[...legend].map(([w, { k, card }]) => `<em><span class="k-${k || 'g'}"></span>${what(w, card)}</em>`).join('')}</div>`;
 }
 
 /** La tira de compassos de la cançó (a dalt de la partitura). */
