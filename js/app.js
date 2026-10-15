@@ -16,7 +16,7 @@ import { STYLES, styleOf } from './styles.js';
 import { savedCode, saveCode, listLibrary, loadLibrarySong, errorText, songFromLibrary } from './library.js';
 import { BOOK, canPlay, toSpec, structure, rawFromLibrarySpec, customSong, partLabel } from './songs.js';
 import { ROUTE, ALL_STEPS, stepById, stepBars as rawStepBars, stepCards as rawStepCards, stepSong, isChorus } from './route.js';
-import { songFromMidi, progFromMidiSong, toBase64, midiEventsOf, midiBarEvents } from './midi.js';
+import { songFromMidi, progFromMidiSong, toBase64, fromBase64, midiEventsOf, midiBarEvents } from './midi.js';
 import { summary as skillSummary } from './skills.js';
 
 // Cada pas es toca sobre la roda de la cançó o, si cal l'estructura, sobre la cançó sencera.
@@ -141,7 +141,14 @@ function toast(text) {
 
 // ---- Dades del jugador ---------------------------------------------------------------------------------------
 const player = () => store.player();
-const currentSong = () => player()?.song ?? null;
+const currentSong = () => {
+  const raw = player()?.song ?? null;
+  // Cançons MIDI carregades abans de la v32: es tornen a dividir en frases (parts automàtiques)
+  if (raw?.midi && !raw.parts && raw.auto !== 2) {
+    try { raw.prog = progFromMidiSong(songFromMidi(fromBase64(raw.midi), '')); raw.auto = 2; store.save(); } catch { raw.auto = 2; }
+  }
+  return raw;
+};
 function routeRec(id) { return player()?.route?.[id] ?? null; }
 function stepDone(id) {
   const r = routeRec(id);
@@ -495,7 +502,7 @@ SCREENS.song = (root, params) => {
       try {
         const ms = songFromMidi(buf, $('mf-parts').value);
         const titol = $('mf-title').value.trim() || ($('mf-file').files[0]?.name ?? 'Cançó MIDI').replace(/\.midi?$/i, '');
-        made = { id: made?.id ?? `midi:${Date.now()}`, titol, artista: '', prog: progFromMidiSong(ms), metre: ms.metre === '4/4' || ms.metre === '2/4' ? ms.metre : ms.metre, tempo: ms.tempo, estil: $('mf-estil').value, font: 'midi', midi: toBase64(buf), parts: $('mf-parts').value, melodia: ms.melody };
+        made = { auto: 2, id: made?.id ?? `midi:${Date.now()}`, titol, artista: '', prog: progFromMidiSong(ms), metre: ms.metre === '4/4' || ms.metre === '2/4' ? ms.metre : ms.metre, tempo: ms.tempo, estil: $('mf-estil').value, font: 'midi', midi: toBase64(buf), parts: $('mf-parts').value, melodia: ms.melody };
         $('mf-msg').textContent = `${ms.bars} compassos · tempo ${ms.tempo} · ${ms.metre}${ms.parts.length > 1 ? ` · ${ms.parts.length} parts` : ' · sense parts (escriu-les a dalt si cal)'}${ms.melody ? ` · melodia: ${ms.melody}` : ' · no he trobat la melodia'}`;
         $('mf-use').disabled = !canPlay(made);
         if (!canPlay(made)) $('mf-msg').textContent += ' · de moment només es poden fer servir MIDI de 4/4.';
@@ -1159,7 +1166,10 @@ function buildGuio() {
   const plan = P.step.plan;
   const rows = [];
   P.bars.forEach((b, j) => { if (b.partStart || !rows.length) rows.push({ part: b.part, bars: [] }); rows[rows.length - 1].bars.push({ ...b, j }); });
-  box.innerHTML = rows.map((r, ri) => `<div class="guio-part" data-row="${ri}"><b>${esc(partLabel(r.part) || '—')}</b><div class="guio-bars">${r.bars.map((b) => { const w = barWord(plan, b); return `<span class="k-${barKind(plan, b) || 'g'}" data-j="${b.j}">${esc(b.chord?.name ?? '')}${w ? `<i>${esc(w)}</i>` : ''}</span>`; }).join('')}</div></div>`).join('');
+  // Cada part en frases de 4 compassos (una fila per frase), com un guió de cançó
+  const cell = (b) => { const w = barWord(plan, b); return `<span class="k-${barKind(plan, b) || 'g'}" data-j="${b.j}">${esc(b.chord?.name ?? '')}${w ? `<i>${esc(w)}</i>` : ''}</span>`; };
+  const phrases = (bars) => { const out = []; for (let i = 0; i < bars.length; i += 4) out.push(bars.slice(i, i + 4)); return out; };
+  box.innerHTML = rows.map((r, ri) => `<div class="guio-part" data-row="${ri}"><b>${esc(partLabel(r.part) || '—')}<small>${r.bars.length} c.</small></b><div class="guio-rows">${phrases(r.bars).map((ph) => `<div class="guio-bars">${ph.map(cell).join('')}</div>`).join('')}</div></div>`).join('');
 }
 function stripAt(j) {
   for (const el of $('guio-wrap').querySelectorAll('[data-j]')) {

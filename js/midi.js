@@ -160,9 +160,63 @@ export function songFromMidi(buf, partsText = '') {
       bar += Number(mm[2]);
     }
   }
+  if (!parts.length) parts = autoParts(chords);
   if (!parts.length || parts[0].bar > 0) parts.unshift({ name: parts.length ? 'Intro' : 'Cançó', bar: 0 });
   parts = parts.filter((pt, i) => pt.bar < nBars && (i === 0 || pt.bar > parts[i - 1].bar));
   return { tempo, metre, bars: nBars, chords, parts, melody: melody ? (melody.name || `canal ${melody.ch + 1}`) : null, events };
+}
+
+/**
+ * Parts automàtiques (quan el MIDI no porta marcadors): es busquen les frases que es repeteixen.
+ * Es prova amb frases de 8 i de 4 compassos i amb un desplaçament inicial (una introducció o una anacrusi);
+ * guanya la combinació on més frases es repeteixen. Cada frase diferent rep una lletra (A, B, C…),
+ * les frases iguals seguides fan una sola part, els compassos d'abans són la Intro i els que sobren, el Final.
+ */
+export function autoParts(chords) {
+  const n = chords.length;
+  if (n < 8) return [];
+  // Dues frases són «la mateixa» si coincideixen en 3/4 dels compassos (una frase i la seva variant)
+  const group = (phr, L) => {
+    const reps = [];
+    return phr.map((p) => {
+      let g = reps.findIndex((r) => r.filter((c, k) => c !== p[k]).length <= Math.floor(L / 4));
+      if (g < 0) { reps.push(p); g = reps.length - 1; }
+      return g;
+    });
+  };
+  let best = null;
+  for (const L of [8, 4]) {
+    for (let off = 0; off < Math.min(L, n - L); off++) {
+      const phr = [];
+      for (let b = off; b + L <= n; b += L) phr.push(chords.slice(b, b + L));
+      if (phr.length < 2) continue;
+      const g = group(phr, L);
+      const size = new Map();
+      for (const x of g) size.set(x, (size.get(x) ?? 0) + 1);
+      const rep = g.filter((x) => size.get(x) > 1).length / g.length;
+      // les frases solen començar amb un canvi d'acord
+      const starts = phr.map((_, i) => off + i * L).filter((b) => b > 0);
+      const align = starts.length ? starts.filter((b) => chords[b] !== chords[b - 1]).length / starts.length : 0;
+      // …i amb l'acord de casa (el primer de la cançó)
+      const home = phr.filter((p) => p[0] === chords[0]).length / phr.length;
+      const score = rep + align * 0.2 + home * 0.4 - off * 0.01 + (L === 8 ? 0.05 : 0);
+      if (!best || score > best.score) best = { score, L, off, g };
+    }
+  }
+  if (!best) return [];
+  const parts = [];
+  if (best.off > 0) parts.push({ name: 'Intro', bar: 0 });
+  // Cada frase és una part (A, B…): així el guió queda en frases i els breaks cauen al final de cada frase
+  best.g.forEach((x, i) => {
+    const name = String.fromCharCode(65 + Math.min(x, 25));
+    const last = parts[parts.length - 1];
+    // dues frases curtes iguals seguides fan una part de 8 compassos
+    if (best.L === 4 && last && last.name === name && best.off + i * best.L - last.bar < 8) return;
+    parts.push({ name, bar: best.off + i * best.L });
+  });
+  const end = best.off + best.g.length * best.L;
+  if (end < n) parts.push({ name: 'Final', bar: end });
+  return parts;
 }
 
 /** Acord d'un compàs a partir del pes de cada nota (tríades majors i menors). */

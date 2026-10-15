@@ -610,3 +610,11 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .guio-bars span.now { background: var(--red); border-color: var(--red); color: #fff; transform: scale(1.06); }
 .guio-bars span.now i { color: #fff; }
 .guio-part.cur > b { color: #fff; }
+
+.guio-rows { display: flex; flex-direction: column; gap: 5px; }
+.guio-part { padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.guio-part > b small { display: block; font-size: 10.5px; color: var(--ink3); letter-spacing: 0; text-transform: none; font-weight: 500; margin-top: 2px; }
+.guio-bars { flex-wrap: nowrap; }
+.guio-bars span { flex: 0 0 72px; }
+
+.stage[data-vt="guio"] .kit-svg { max-height: 17vh; }

@@ -187,7 +187,8 @@ export function stepBars(step, song, choice = {}) {
 
   return info.map((b, j) => {
     const last = j === bars.length - 1;
-    const endOfPart = b.partEnd && !last;
+    // (una part de menys de 4 compassos, com una intro curta, no porta break ni marca)
+    const endOfPart = b.partEnd && !last && partLen[b.partIdx] >= 4;
     const pos = posInPart[j];
     let card = groove;
     if (plan.parts) card = cardById(plan.parts[chorusOf(b)]) ?? groove;
