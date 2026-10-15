@@ -18,6 +18,7 @@ import { BOOK, canPlay, toSpec, structure, rawFromLibrarySpec, customSong, partL
 import { ROUTE, ALL_STEPS, stepById, stepBars as rawStepBars, stepCards as rawStepCards, stepSong, isChorus } from './route.js';
 import { songFromMidi, progFromMidiSong, toBase64, fromBase64, midiEventsOf, midiBarEvents } from './midi.js';
 import { summary as skillSummary } from './skills.js';
+import { METRES, METRE_NAMES, metre, setMetre, cardForMetre, bandForMetre, baseId } from './metre.js';
 
 // Cada pas es toca sobre la roda de la cançó o, si cal l'estructura, sobre la cançó sencera.
 const stepBars = (step, song, choice) => rawStepBars(step, stepSong(step, song), choice);
@@ -380,21 +381,23 @@ async function playPreview(raw) {
   const roda = stepSong(stepById('d1d'), sp).bars.slice(0, 4);
   let midi = null;
   try { midi = midiEventsOf(raw); } catch { midi = null; }
-  const groove = sp.groove ?? cardById('p5');
+  const M = METRES[raw.metre || '4/4'] ?? METRES['4/4'];
+  const groove = cardForMetre(sp.groove ?? cardById('p5'), M);
+  const band = M.div === 3 && !['shuffle', 'swing', 'balada12'].includes(sp.band) ? 'balada12' : sp.band;
   const ctx = audioContext();
   const spb = 60 / sp.songTempo;
   const t0 = ctx.currentTime + 0.15;
   roda.forEach((b, i) => {
-    const start = t0 + i * 4 * spb;
+    const start = t0 + i * M.bpb * spb;
     if (midi) for (const e of midiBarEvents(midi, b.idx)) tone(e.inst, e.pitch, start + e.beat * spb, e.dur * spb, { gain: e.gain });
     else {
-      for (const e of barEvents(sp.band, b.chord, 'play')) e.notes.forEach((m, k) => { const off = e.strum ? Math.abs(e.strum) * k : 0; tone(e.inst, m, start + e.beat * spb + off, e.dur * spb - off, { gain: e.gain * (1 - k * 0.04) }); });
+      for (const e of bandForMetre(barEvents(band, b.chord, 'play'), M)) e.notes.forEach((m, k) => { const off = e.strum ? Math.abs(e.strum) * k : 0; tone(e.inst, m, start + e.beat * spb + off, e.dur * spb - off, { gain: e.gain * (1 - k * 0.04) }); });
       for (const n of barNotes(groove)) drum(n.piece, start + n.beat * spb, { vel: PIECES[n.piece].ghost ? 0.5 : 0.85 });
     }
   });
   const btn = document.getElementById('song-listen');
   if (btn) btn.innerHTML = '■ Para <kbd>E</kbd>';
-  previewTimer = setTimeout(stopPreview, (roda.length * 4 * spb + 0.6) * 1000);
+  previewTimer = setTimeout(stopPreview, (roda.length * M.bpb * spb + 0.6) * 1000);
 }
 
 // ---- La cançó ----------------------------------------------------------------------------------------------------
@@ -421,7 +424,7 @@ SCREENS.song = (root, params) => {
   const prev = $('song-prev');
   let shown = null;
   const choose = (raw) => {
-    if (!canPlay(raw)) { toast('Aquesta cançó és en 6/8: de moment el joc de bateria només fa 4/4.'); return; }
+    if (!canPlay(raw)) { toast(`Aquesta cançó és en ${raw.metre}: el joc de bateria no fa aquest compàs.`); return; }
     setSong(raw);
     toast(`Cançó: ${raw.titol}`);
     if (params.after?.step) openStep(params.after.step);
@@ -438,7 +441,7 @@ SCREENS.song = (root, params) => {
     prev.innerHTML = `<h3>La cançó</h3><div class="big">${esc(raw.titol)}</div><div class="muted">${esc(raw.artista || '')}</div>
       <div class="meta"><span>Tempo ${esc(raw.tempo)}${sp && sp.songTempo !== Number(raw.tempo) ? ` (per a la bateria, ${sp.songTempo})` : ''}</span><span>${esc(raw.metre || '4/4')}</span><span>${esc(raw.estil || 'pop')}${sp ? ' → banda ' + esc(BANDS[sp.band]?.name ?? sp.band) : ''}</span>${sp ? `<span>${sp.bars.length} compassos</span>` : ''}</div>
       ${raw.midi ? `<p class="small muted">🎹 Del MIDI: sona la cançó sense bateria${raw.melodia ? `, amb la melodia (${esc(raw.melodia)}) ben clara` : ' (no he trobat quina pista és la melodia)'}.</p>` : ''}
-      ${ok ? '' : '<p class="muted">És en 6/8: de moment el joc de bateria només fa compassos de 4/4.</p>'}
+      ${ok ? '' : `<p class="muted">És en ${esc(raw.metre)}: el joc de bateria no fa aquest compàs.</p>`}
       ${sp ? (() => {
         // El patró amb què la tocaràs: el del pas que et toca ara (i el patró propi de la cançó, si en porta)
         const st = stepById(recommended());
@@ -455,7 +458,7 @@ SCREENS.song = (root, params) => {
   };
   /** Llista de cançons: el focus mostra la cançó i Enter la tria (amb el ratolí, doble clic o el botó). */
   const songList = (list, title) => {
-    mid.innerHTML = `<h3>${esc(title)}</h3><div class="list scroll" id="song-items">${list.map((raw, i) => `<button type="button" class="item${canPlay(raw) ? '' : ' off'}${currentSong()?.id === raw.id ? ' sel' : ''}" data-i="${i}" data-key="s:${esc(raw.id)}"><span class="ic">${icon('note')}</span><span class="tx"><b>${esc(raw.titol)}</b><small>${esc(raw.artista || '')}${raw.tempo ? ` · ${esc(raw.tempo)}` : ''}${raw.estil ? ` · ${esc(raw.estil)}` : ''}${canPlay(raw) ? '' : ' · 6/8'}</small></span><span class="st" title="Dificultat">${'●'.repeat(Math.min(3, (raw.nivell ?? 0) + 1))}</span></button>`).join('') || '<p class="muted">No hi ha cap cançó.</p>'}</div>`;
+    mid.innerHTML = `<h3>${esc(title)}</h3><div class="list scroll" id="song-items">${list.map((raw, i) => `<button type="button" class="item${canPlay(raw) ? '' : ' off'}${currentSong()?.id === raw.id ? ' sel' : ''}" data-i="${i}" data-key="s:${esc(raw.id)}"><span class="ic">${icon('note')}</span><span class="tx"><b>${esc(raw.titol)}</b><small>${esc(raw.artista || '')}${raw.tempo ? ` · ${esc(raw.tempo)}` : ''}${raw.estil ? ` · ${esc(raw.estil)}` : ''}${raw.metre && raw.metre !== '4/4' ? ` · ${esc(raw.metre)}` : ''}</small></span><span class="st" title="Dificultat">${'●'.repeat(Math.min(3, (raw.nivell ?? 0) + 1))}</span></button>`).join('') || '<p class="muted">No hi ha cap cançó.</p>'}</div>`;
     mid.querySelectorAll('[data-i]').forEach((el) => {
       const raw = list[Number(el.dataset.i)];
       el.addEventListener('focus', () => preview(raw));
@@ -505,7 +508,7 @@ SCREENS.song = (root, params) => {
         made = { auto: 2, id: made?.id ?? `midi:${Date.now()}`, titol, artista: '', prog: progFromMidiSong(ms), metre: ms.metre === '4/4' || ms.metre === '2/4' ? ms.metre : ms.metre, tempo: ms.tempo, estil: $('mf-estil').value, font: 'midi', midi: toBase64(buf), parts: $('mf-parts').value, melodia: ms.melody };
         $('mf-msg').textContent = `${ms.bars} compassos · tempo ${ms.tempo} · ${ms.metre}${ms.parts.length > 1 ? ` · ${ms.parts.length} parts` : ' · sense parts (escriu-les a dalt si cal)'}${ms.melody ? ` · melodia: ${ms.melody}` : ' · no he trobat la melodia'}`;
         $('mf-use').disabled = !canPlay(made);
-        if (!canPlay(made)) $('mf-msg').textContent += ' · de moment només es poden fer servir MIDI de 4/4.';
+        if (!canPlay(made)) $('mf-msg').textContent += ` · el joc de bateria no fa el compàs ${ms.metre}.`;
         preview(made);
       } catch (err) { $('mf-msg').textContent = `No s'ha pogut llegir: ${err.message}`; $('mf-use').disabled = true; }
     };
@@ -539,7 +542,8 @@ SCREENS.song = (root, params) => {
           if (loaded.has(it.id)) return loaded.get(it.id);
           const song = await loadLibrarySong(c, it.id);
           const spec = songFromLibrary(song, it, { chordFromSymbol });
-          const raw = rawFromLibrarySpec(spec, it, song?.metre ?? song?.compas ?? '4/4');
+          const temps = String(song?.estructura?.temps ?? '4');
+          const raw = rawFromLibrarySpec(spec, it, { 3: '3/4', 6: '6/8', 2: '2/4', 12: '12/8', 9: '9/8' }[temps] ?? '4/4');
           loaded.set(it.id, raw);
           return raw;
         };
@@ -847,8 +851,10 @@ function openStep(id, opts = {}) {
   const p = player();
   const rec = routeRec(id);
   const choice = opts.choice ?? rec?.choice ?? (step.plan.choose ? { groove: song.groove?.id ?? 'p5', brk: 'break1' } : {});
-  const bars = stepBars(step, song, choice);
-  const cards = stepCards(step, song, choice);
+  // La mètrica de la cançó: les cartes es passen a 3 polsos, a tresets… si cal
+  const M = setMetre(raw.metre || '4/4');
+  const bars = stepBars(step, song, choice).map((b) => ({ ...b, card: b.card ? cardForMetre(b.card, M) : b.card }));
+  const cards = [...new Map(stepCards(step, song, choice).map((c) => cardForMetre(c, M)).map((c) => [c.id, c])).values()];
   const groove = bars.find((b) => b.card && !b.card.brk && !b.stop)?.card ?? cards[0];
   const tempo = rec?.lastTempo || Math.min(song.songTempo, step.tempoMax ?? 120);
   const form = stepSong(step, song).form;
@@ -878,13 +884,14 @@ function openStep(id, opts = {}) {
     level: null,
     tempo,
     songTempo: song.songTempo,
-    band: song.band,
+    band: M.div === 3 && !['shuffle', 'swing', 'balada12'].includes(song.band) ? 'balada12' : song.band,
+    metre: M.name,
     supports: p?.routeSupports ?? 1,
     viewType: step.id === 'canco' ? 'guio' : (p?.viewType === 'guio' ? 'score' : p?.viewType ?? 'score'),
     metronome: step.level.n === 1 && !rec,
     quiet: false,
     title: `${stepCode(step)} · ${step.titol}`,
-    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''}${midiEvents ? ' (MIDI)' : ''} · ${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'}${step.level.n ? ` · Nivell ${step.level.n}: ${step.level.titol}` : ''}`,
+    sub: `${song.title}${song.artist ? ' · ' + song.artist : ''}${midiEvents ? ' (MIDI)' : ''} · ${M.name !== '4/4' ? M.name + ' · ' : ''}${stepSong(step, song).form ? 'tota la cançó' : 'la roda de la cançó'}${step.level.n ? ` · Nivell ${step.level.n}: ${step.level.titol}` : ''}`,
     playBars: bars.length,
     form,
     roles,
@@ -905,6 +912,7 @@ function openMission(cardId) {
     cardId,
     level: L,
     cards: brk ? [cardById(GROOVE_FOR_BREAK), c] : [c],
+    metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: m?.lastTempo || L?.tempo || 85,
     band: p?.bands[cardId] ?? defaultBand(cardId),
     supports: (L && p?.supports[L.id]) ?? L?.supports ?? 1,
@@ -928,6 +936,7 @@ function openFree(cardId) {
     cardId,
     level: L,
     cards: c.brk ? [cardById(GROOVE_FOR_BREAK), c] : [c],
+    metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: store.mission(cardId)?.lastTempo || L?.tempo || Math.min(110, styleOf(cardId)?.tempo ?? 90),
     band: player()?.bands[cardId] ?? defaultBand(cardId),
     supports: 1,
@@ -952,6 +961,7 @@ function openTempo(cardId) {
     cardId,
     level: L,
     cards: [c],
+    metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: store.mission(cardId)?.lastTempo || L?.tempo || Math.min(110, st?.tempo ?? 90),
     band: st?.band ?? player()?.bands[cardId] ?? defaultBand(cardId),
     supports: 1,
@@ -978,6 +988,7 @@ function openStyleCard(cardId) {
     cardId,
     level: levelOf(cardId),
     cards: c.brk ? [cardById(GROOVE_FOR_BREAK), c] : [c],
+    metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: saved?.lastTempo || start,
     styleTempo: st?.tempo ?? 100,
     band: st?.band ?? defaultBand(cardId),
@@ -1005,6 +1016,14 @@ function openStyleCardFor(cardId, st) {
 
 function preparePlay() {
   stopSession();
+  if (S.play.mode !== 'route') {
+    const P0 = S.play;
+    P0.baseCards ??= P0.cards;
+    const M = setMetre(P0.metre ?? '4/4');
+    P0.cards = P0.baseCards.map((c) => cardForMetre(c, M));
+  }
+  $('metre-wrap').hidden = S.play.mode === 'route';
+  $('metre-sel').value = metre().name;
   toggleOpts(false);
   $('help').hidden = true;
   const P = S.play;
@@ -1032,6 +1051,11 @@ function preparePlay() {
   loadSounds();
 }
 
+/** «quatre», «tres» o «dues» baquetes, segons els pulsos del compàs */
+function sticksWord(cap = false) {
+  const w = { 2: 'dues', 3: 'tres', 4: 'quatre' }[metre().bpb] ?? 'quatre';
+  return cap ? w[0].toUpperCase() + w.slice(1) : w;
+}
 function introText() {
   const P = S.play;
   if (P.mode === 'route') {
@@ -1042,7 +1066,7 @@ function introText() {
   if (P.mode === 'tempo') return 'Escoltes tres compassos, entres, i després la banda començarà a callar. <b>Continua tocant</b> quan calli!';
   if (P.mode === 'style' && P.style) return esc(P.style.text);
   if (P.mode === 'mission' && P.level) return esc(P.level.intro);
-  return 'Escolta la carta i entra quan sonin les quatre baquetes.';
+  return `Escolta la carta i entra quan sonin les ${sticksWord()} baquetes.`;
 }
 function playKeys() {
   const P = S.play;
@@ -1227,6 +1251,19 @@ function setTempo(t) {
   S.play.tempo = Math.max(40, Math.min(200, t));
   $('tempo-val').textContent = S.play.tempo;
 }
+for (const name of METRE_NAMES) {
+  const o = document.createElement('option');
+  o.value = name;
+  o.textContent = name;
+  $('metre-sel').appendChild(o);
+}
+$('metre-sel').addEventListener('change', (e) => {
+  const P = S.play;
+  if (!P || P.mode === 'route') return;
+  P.metre = e.target.value;
+  if (METRES[P.metre].div === 3 && !['shuffle', 'swing', 'balada12'].includes(P.band)) P.band = 'balada12';
+  preparePlay();
+});
 $('band-sel').addEventListener('change', (e) => {
   S.play.band = e.target.value;
   const p = player();
@@ -1364,7 +1401,7 @@ async function startSession(opts = {}) {
     onFinish: (sum) => finish(sum),
   });
   S.judged = 0;
-  S.wasUnlocked = new Set(P.cards.map((c) => c.id).filter(unlocked));
+  S.wasUnlocked = new Set(P.cards.map((c) => baseId(c.id)).filter(unlocked));
   if (!S.warnedLatency && outputLatencyMs() > 60) {
     S.warnedLatency = true;
     toast(`El so surt amb ${outputLatencyMs()} ms de retard: sembla que fas servir auriculars o un altaveu sense fil. Amb cable o amb els altaveus de l'ordinador, els cops sonaran a l'instant.`);
@@ -1438,7 +1475,7 @@ function loop() {
     S.lastBarShown = pos.bar;
     if (P.mode === 'route') stripAt(info.kind === 'play' ? info.j % P.bars.length : null);
     if (info.kind === 'demo') setCoach(`<b>Escolta.</b> El joc toca ${info.card?.brk ? 'el break' : 'la carta'} amb la banda: mira com la pilota salta per la carta.`, 'demo');
-    else if (info.kind === 'count') setCoach(info.entryBreak ? '<b>Prepara’t.</b> El break t’avisa: al compàs següent entres tu!' : '<b>Prepara’t.</b> Quatre baquetes i entres tu!', 'count');
+    else if (info.kind === 'count') setCoach(info.entryBreak ? '<b>Prepara’t.</b> El break t’avisa: al compàs següent entres tu!' : `<b>Prepara’t.</b> ${sticksWord(true)} baquetes i entres tu!`, 'count');
     else if (info.kind === 'play' && P.mode === 'tempo') {
       setCoach(info.quiet ? '<b>🤫 La banda calla.</b> Continua tocant la carta, sense parar.' : S.trainer?.message ?? '<b>Ara tu!</b> Toca amb la banda.', info.quiet ? 'count' : 'play');
     } else if (info.kind === 'play') {
@@ -1461,11 +1498,14 @@ function drawIdle() {
   // Pista quieta amb la primera carta, perquè es vegi què vindrà
   const P = S.play;
   if (!P) return;
+  const bpb = metre().bpb;
   const fake = {
-    barDur: (240 / P.tempo),
+    barDur: (bpb * 60 / P.tempo),
     spb: 60 / P.tempo,
     bars: [],
-    barStart: (i) => i * (240 / P.tempo),
+    bpb,
+    div: metre().div,
+    barStart: (i) => i * (bpb * 60 / P.tempo),
   };
   const idleCards = P.mode === 'route' ? [P.groove, P.cards.find((c) => c.id !== P.groove.id)].filter(Boolean) : P.cards;
   for (let i = 0; i < 3; i++) {
@@ -1557,7 +1597,8 @@ function finish(sum) {
       else if (e.status === 'near') a.ok += 0.5;
       per.set(e.card, a);
     }
-    for (const [id, a] of per) {
+    for (const [cid, a] of per) {
+      const id = baseId(cid);
       if (a.n < 8) continue;
       const score = a.ok / a.n;
       if (ALL_MISSIONS.includes(id)) store.recordAttempt(id, { stars: starsOfScore(score), score, tempo: P.tempo });
@@ -1573,7 +1614,7 @@ function finish(sum) {
   if (sum.total && p) {
     const byCls = Object.fromEntries(Object.entries(sum.byCls).map(([k, v]) => [k, [Math.round(v.ok * 10) / 10, v.total]]));
     store.addHistory({
-      mode: P.mode, card: P.cardId, step: P.step?.id ?? null, song: P.raw?.titol ?? null, style: P.style?.id ?? styleOf(P.cardId)?.id ?? null, tempo: P.tempo,
+      mode: P.mode, card: baseId(P.cardId), step: P.step?.id ?? null, song: P.raw?.titol ?? null, style: P.style?.id ?? styleOf(P.cardId)?.id ?? null, tempo: P.tempo,
       score: Math.round(sum.score * 100) / 100, stars: sum.stars, total: sum.total, extras: sum.extras, missed: sum.missed, wrongs: sum.wrongs,
       mean: Math.round(sum.meanMs), sd: Math.round(sum.sdMs), bars: sum.bars, clean: sum.cleanBars, ghosts: sum.ghosts, loud: sum.loud, byCls,
       ...(T ? { quietBest: T.record } : {}),
@@ -1594,7 +1635,7 @@ function finish(sum) {
   }
 
   // Patró desbloquejat?
-  const newly = P.cards.map((c) => c.id).filter((id) => !S.wasUnlocked?.has(id) && unlocked(id));
+  const newly = [...new Set(P.cards.map((c) => baseId(c.id)))].filter((id) => !S.wasUnlocked?.has(id) && unlocked(id));
   const ub = $('res-unlock');
   ub.hidden = !newly.length;
   if (newly.length) {

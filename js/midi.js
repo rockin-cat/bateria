@@ -123,7 +123,13 @@ export function songFromMidi(buf, partsText = '') {
     const cands = tonal.filter((v) => !(v.program >= 32 && v.program <= 39) && mono(v) > 0.75 && avg(v) > 57 && v.notes.length > 16);
     melody = cands.sort((a, b) => avg(b) - avg(a))[0] ?? null;
   }
-  const barTicks = ppq * 4;
+  // Compàs i pols segons el compàs del MIDI: en 6/8, 9/8 i 12/8 el pols és la negra amb punt
+  const num = ts?.num ?? 4;
+  const den = ts?.den ?? 4;
+  const barTicks = Math.round(ppq * 4 * num / den);
+  const compound = den === 8 && num % 3 === 0 && num > 3;
+  const pulseTicks = compound ? ppq * 1.5 : ppq * 4 / den;
+  const bpbM = Math.round(barTicks / pulseTicks);
   const lastTick = Math.max(...tonal.flatMap((v) => v.notes.map((n) => n.tick + n.dur)));
   const nBars = Math.max(1, Math.min(160, Math.ceil(lastTick / barTicks - 0.05)));
   const events = Array.from({ length: nBars }, () => []);
@@ -135,12 +141,12 @@ export function songFromMidi(buf, partsText = '') {
     for (const n of v.notes) {
       const bar = Math.floor(n.tick / barTicks);
       if (bar >= nBars) continue;
-      const beat = (n.tick - bar * barTicks) / ppq;
-      const dur = Math.min(4, n.dur / ppq);
+      const beat = (n.tick - bar * barTicks) / pulseTicks;
+      const dur = Math.min(bpbM, n.dur / pulseTicks);
       events[bar].push({ inst, pitch: n.pitch, beat, dur, gain: GAIN[inst] * (0.5 + 0.5 * n.vel / 127) });
       if (!isMel) {
         // acords: pes per durada dins del compàs; el baix compta el doble
-        const w = Math.min(dur, 4 - beat) * (inst === 'baix' ? 2 : 1);
+        const w = Math.min(dur, bpbM - beat) * (inst === 'baix' ? 2 : 1);
         weights[bar][n.pitch % 12] += w;
         if (beat < 2) lowest[bar] = Math.min(lowest[bar], n.pitch);
       }
@@ -163,7 +169,7 @@ export function songFromMidi(buf, partsText = '') {
   if (!parts.length) parts = autoParts(chords);
   if (!parts.length || parts[0].bar > 0) parts.unshift({ name: parts.length ? 'Intro' : 'Cançó', bar: 0 });
   parts = parts.filter((pt, i) => pt.bar < nBars && (i === 0 || pt.bar > parts[i - 1].bar));
-  return { tempo, metre, bars: nBars, chords, parts, melody: melody ? (melody.name || `canal ${melody.ch + 1}`) : null, events };
+  return { tempo: compound ? Math.round(tempo / 1.5) : tempo, metre, bars: nBars, chords, parts, melody: melody ? (melody.name || `canal ${melody.ch + 1}`) : null, events };
 }
 
 /**

@@ -11,6 +11,7 @@
 import { LLIBRE_OBERT } from '../data/llibre-obert.js';
 import { chordFromSymbol } from './band.js';
 import { drawnCard } from './cards.js';
+import { isMetre } from './metre.js';
 
 export const BOOK = LLIBRE_OBERT;
 
@@ -40,7 +41,7 @@ export const partLabel = (p) => {
 const BAND_OF = { reggae: 'reggae', pop: 'pop', rumba: 'rumba', balada: 'pop', rock: 'rock', reggaeton: 'reggaeton', funk: 'funk', shuffle: 'shuffle', ska: 'festa', punk: 'punk', disco: 'disco', cumbia: 'cumbia', bossa: 'bossa', swing: 'swing', hiphop: 'hiphop', trap: 'trap', metal: 'metal' };
 
 export function canPlay(raw) {
-  return raw && (raw.metre === '4/4' || raw.metre === '2/4' || !raw.metre) && parseProg(raw.prog).length > 0;
+  return raw && isMetre(raw.metre || '4/4') && parseProg(raw.prog).length > 0;
 }
 
 /** Converteix la cançó guardada al format que fa servir el joc. */

@@ -10,6 +10,7 @@ import { audioContext, drum, click, tone, stopAll, heardTime, busGain } from './
 import { barEvents } from './band.js';
 import { barNotes, PIECES } from './cards.js';
 import { createJudge } from './judge.js';
+import { metre, bandForMetre } from './metre.js';
 
 const LOOKAHEAD = 0.25; // s d'àudio programats per endavant
 const VISUAL_AHEAD = 3; // compassos generats per endavant per a la pista
@@ -25,8 +26,10 @@ const VISUAL_AHEAD = 3; // compassos generats per endavant per a la pista
  */
 export function createSession(cfg, hooks = {}) {
   const ctx = audioContext();
+  const M = metre(); // la mètrica (pulsos per compàs i subdivisió)
+  const bpb = M.bpb;
   const spb = 60 / cfg.tempo;
-  const barDur = 4 * spb;
+  const barDur = bpb * spb;
   const D = cfg.demoBars ?? 0;
   const P = cfg.playBars ?? 8;
   const t0 = ctx.currentTime + 0.35;
@@ -66,11 +69,11 @@ export function createSession(cfg, hooks = {}) {
     b.start = start;
     b.notes = [];
     if (b.card && (b.kind === 'demo' || b.kind === 'play' || (b.kind === 'count' && b.entryBreak))) {
-      const list = barNotes(b.card);
+      const list = barNotes(b.card).filter((n) => n.beat < bpb - 1e-6);
       for (const n of list) {
         const note = { piece: n.piece, step: n.step, beat: n.beat, time: start + n.beat * spb, kind: b.kind === 'count' ? 'demo' : b.kind, card: b.card, bar: b.j };
         if (b.kind === 'play' && PIECES[n.piece].cls !== 'pedal') {
-          note.win = windowFor(b.card, n, spb);
+          note.win = windowFor(b.card, n, spb, bpb);
           note.exp = judge.add({ piece: n.piece, time: note.time, win: note.win, bar: b.j, step: n.step, card: b.card.id });
         }
         b.notes.push(note);
@@ -92,7 +95,7 @@ export function createSession(cfg, hooks = {}) {
     if (midiEvs) {
       for (const e of midiEvs) tone(e.inst, e.pitch, start + e.beat * spb, e.dur * spb, { gain: e.gain });
     } else if (!(b.kind === 'play' && b.quiet)) {
-      for (const e of barEvents(cfg.band, b.chord, kind, { beats, role: b.role, pickup: b.pickup && !b.stop })) {
+      for (const e of bandForMetre(barEvents(cfg.band, b.chord, kind, { beats, role: b.role, pickup: b.pickup && !b.stop }), M)) {
         const t = start + e.beat * spb;
         const dur = e.dur * spb;
         e.notes.forEach((m, k) => {
@@ -111,10 +114,10 @@ export function createSession(cfg, hooks = {}) {
     }
     // Compte i metrònom
     if (b.kind === 'count' && !b.entryBreak) {
-      for (let k = 0; k < 4; k++) drum('stick', start + k * spb, { vel: k === 0 ? 1 : 0.8 });
+      for (let k = 0; k < bpb; k++) drum('stick', start + k * spb, { vel: k === 0 ? 1 : 0.8 });
     }
     if (b.kind === 'play' && cfg.metronome && !b.quiet) {
-      for (let k = 0; k < 4; k++) click(start + k * spb, k === 0);
+      for (let k = 0; k < bpb; k++) click(start + k * spb, k === 0);
     }
   }
 
@@ -151,7 +154,7 @@ export function createSession(cfg, hooks = {}) {
     const heard = heardTime(perf);
     const x = (heard - t0) / barDur;
     const bar = Math.floor(x);
-    return { heard, bar, beat: (x - bar) * 4, info: bar >= 0 ? generate(bar) : null, x };
+    return { heard, bar, beat: (x - bar) * bpb, info: bar >= 0 ? generate(bar) : null, x };
   }
 
   /** Un cop de l'alumnat (perf = timeStamp de l'esdeveniment). */
@@ -166,7 +169,7 @@ export function createSession(cfg, hooks = {}) {
   }
 
   const api = {
-    t0, spb, barDur, D, judge, bars,
+    t0, spb, barDur, D, judge, bars, bpb, div: M.div,
     get stopBar() { return stopBarIndex; },
     barStart, position, hit, generate,
     start() {
@@ -194,14 +197,14 @@ export function createSession(cfg, hooks = {}) {
 }
 
 /** Finestra de temps d'una rodona: el 45 % de la distància a la rodona veïna de la mateixa classe. */
-function windowFor(card, n, spb) {
+function windowFor(card, n, spb, bpb = 4) {
   const cls = PIECES[n.piece].cls;
   const beats = [];
   for (const [p, steps] of Object.entries(card.notes)) if (PIECES[p].cls === cls) for (const s of steps) beats.push(s / (card.grid / 4));
   let gap = 4;
   for (const b of beats) {
     if (Math.abs(b - n.beat) < 1e-6) continue;
-    const d = Math.min(Math.abs(b - n.beat), 4 - Math.abs(b - n.beat));
+    const d = Math.min(Math.abs(b - n.beat), bpb - Math.abs(b - n.beat));
     gap = Math.min(gap, d);
   }
   return Math.max(0.06, Math.min(0.13, 0.45 * gap * spb));
