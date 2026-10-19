@@ -7,7 +7,7 @@ Publicat a <https://rockin-cat.github.io/bateria/>.
 2. **Primer escoltes**: el joc toca la carta amb la banda i les rodones arriben a la línia groga de la pista.
 3. **Ara tu**: quatre baquetes d'entrada; la banda (baix, teclat i guitarra) continua i la bateria la fas tu.
 4. **A cada cop** surt si ha anat bé (perfecte, aviat, tard, peça equivocada, cop de més) sobre la pista, sobre la bateria dibuixada i sobre la mateixa carta.
-5. **Al final**: estrelles de precisió, peça a peça, control del temps (avançat / endarrerit) i consells. Si ha anat malament, el botó gran és «♪ T'ho ensenyo i tornem-hi» (torna la demostració i baixa el tempo).
+5. **Al final**: on ets (**En procés**, **A prop** o **Ja ho tens!**), què t'ha faltat (la peça que costa, si vas avançat o endarrerit, cops de més, rodones sense cop…) i què pots fer, amb una recomanació de pas: si queda «En procés» dues vegades seguides, proposa baixar el tempo o repassar un pas de base; amb «Ja ho tens!», el pas següent. Al costat, peça a peça i control del temps. Si ha anat malament, el botó gran és «♪ T'ho ensenyo i tornem-hi» (torna la demostració i baixa el tempo).
 
 ## Com es juga
 
@@ -17,13 +17,14 @@ Publicat a <https://rockin-cat.github.io/bateria/>.
 
 ## Parts del joc
 
-- **El camí**: 7 nivells amb les 45 cartes (i 3 escalfaments): les peces i el pols · el ritme de rock · contratemps i síncopes · notes fantasma · semicorxeres · shuffle i tresets · toms i breaks. «Et toca» marca el primer repte sense ★★.
-- **Toca amb la banda**: qualsevol carta, sense final, amb l'opció «Compte en silenci» (la banda calla dos compassos de cada quatre).
+- **Full de ruta**: els 10 nivells del pòster, sobre la cançó del grup. Un pas queda fet amb «A prop» o més. Quan tots els passos hi són, el joc ho diu: has acabat el camí i ja pots portar-ho al grup; a partir d'aquí l'eina només serveix per repassar alguna cosa concreta. «Què sé fer» resumeix el que ja pots fer a la banda.
+- **El camí**: 7 nivells amb les 45 cartes (i 3 escalfaments): les peces i el pols · el ritme de rock · contratemps i síncopes · notes fantasma · semicorxeres · shuffle i tresets · toms i breaks. «Et toca» marca el primer repte que encara no és a «A prop».
+- **Toca amb la banda**: qualsevol carta, fins que diguis prou, amb l'opció «Compte en silenci» (la banda calla dos compassos de cada quatre).
 - **Cançons de la biblioteca**: les cançons del Generador de diagrames (mateix codi del professorat que el joc de teclat). Agafa l'estructura, els acords i el tempo; si la fitxa té bateria (seqüenciador o imatge «Patró n»), la fa servir, i si hi ha un break, el toca al final de cada part.
-- **Entrenador de tempo**: la banda toca 4 compassos i calla 1, 2, 3, 4, 6, 8, 12, 16 compassos. Mentre calla, res a la pantalla marca el temps. Si en tornar vas a temps (≥ 60 % dels cops al lloc i l'últim compàs dins de ±12 % d'un temps), el silenci següent és més llarg; dues fallades seguides acaben la partida. Rècord per jugador.
+- **Entrenador de tempo**: la banda toca 4 compassos i calla 1, 2, 3, 4, 6, 8, 12, 16 compassos. Mentre calla, res a la pantalla marca el temps. Si en tornar vas a temps (≥ 60 % dels cops al lloc i l'últim compàs dins de ±12 % d'un temps), el silenci següent és més llarg; dues fallades seguides acaben la partida. Al final, el nivell (segons el silenci més llarg que has aguantat) i consells.
 - **Inspirador d'estils**: 17 estils (rock, pop, punk, funk, disco, reggae, ska, reggaeton, rumba catalana, cúmbia, blues shuffle, swing, bossa nova, samba, hip-hop, trap, metal amb un sol bombo), cadascun amb una explicació, 2–3 cartes noves dibuixades a l'estil ROCKIN, la seva banda i les cartes ROCKIN que hi encaixen. Les cartes noves per imprimir són a `imprimir/cartes-estils-rockin.pdf` (88 × 63 mm, 8 per A4, amb marques de tall; es generen amb `tools/cartes-estils.html`).
 - **El meu perfil**: cada partida es guarda (peces, temps, errors). El perfil resumeix la precisió peça a peça, el control del temps, el tipus de carta que costa més, l'evolució i les últimes partides, i proposa què practicar amb un botó que hi porta.
-- **Ajudes que es retiren**: pista i pads que s'encenen → només la pista → només la carta. Dues vegades malament seguides les tornen a posar; tres estrelles en treuen una.
+- **Ajudes que es retiren**: pista i pads que s'encenen → només la pista → només la carta. Dues vegades malament seguides les tornen a posar; «Ja ho tens!» en treu una.
 
 ## Arquitectura
 
@@ -48,7 +49,7 @@ HTML + mòduls ES, sense dependències ni bundler (Web Audio directe).
 
 Per provar-lo en local: `python3 tools/serve.py` (obre <http://localhost:8000>).
 
-Dades guardades al navegador: `rockin.bateria.v1` (jugadors, estrelles, configuració) i `rockin.play.biblio.codi` (codi de la biblioteca, compartit amb el joc de teclat).
+Dades guardades al navegador: `rockin.bateria.v1` (jugadors, nivell de cada pas i carta, configuració) i `rockin.play.biblio.codi` (codi de la biblioteca, compartit amb el joc de teclat).
 
 ## Llicència
 

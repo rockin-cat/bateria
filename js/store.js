@@ -1,4 +1,4 @@
-// Què es guarda al navegador: qui juga, les estrelles de cada repte i la
+// Què es guarda al navegador: qui juga, el nivell de cada repte (`stars` 0–3: En procés / A prop / Ja ho tens!) i la
 // configuració de la bateria. Si el navegador no deixa guardar (mode privat),
 // el joc funciona igual i només s'oblida en tancar.
 
