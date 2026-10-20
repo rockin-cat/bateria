@@ -26,7 +26,7 @@ export const currentName = () => data.current;
 export function player(name = data.current) {
   if (!name) return null;
   const p = (data.players[name] ??= { missions: {}, supports: {}, poorStreak: {}, bands: {}, created: Date.now() });
-  p.missions ??= {}; p.supports ??= {}; p.poorStreak ??= {}; p.bands ??= {}; p.history ??= []; p.styleCards ??= {}; p.tempoBest ??= null;
+  p.missions ??= {}; p.supports ??= {}; p.poorStreak ??= {}; p.bands ??= {}; p.history ??= []; p.styleCards ??= {}; p.tempoBest ??= null; p.choices ??= [];
   return p;
 }
 

@@ -666,6 +666,8 @@ SCREENS.skills = (root, params) => {
         ${pathDone() ? `<p class="path-end">${esc(PATH_END)}</p>` : ''}
         <h3>${icon('bag').replace('<svg', '<svg width="15" height="15"')} A la banda ja pots…</h3>
         ${on.length ? `<ul>${on.map((x) => `<li><span class="num">${x.level.n}</span>${esc(x.banda)}</li>`).join('')}</ul>` : '<p class="muted">Encara res: comença pel nivell 1. Un pas compta quan el toques com a mínim a «A prop».</p>'}
+        <h3 class="path-h">Com tries el teu camí</h3>
+        ${pathChoicesHtml(player())}
       </div>
     </div>`;
   const show = (i) => {
@@ -1588,6 +1590,7 @@ function finish(sum) {
 
   const p = player();
   const wasPathDone = pathDone();
+  const prevStars = (P.mode === 'route' ? p?.route?.[P.step.id]?.stars : P.mode === 'style' ? p?.styleCards?.[P.cardId]?.stars : P.mode === 'mission' ? store.mission(P.cardId)?.stars : 0) ?? 0;
   let rec = null;
   if (P.mode === 'mission' && sum.total) rec = store.recordAttempt(P.cardId, { stars: sum.stars, score: sum.score, tempo: P.tempo });
   const T = P.mode === 'tempo' ? S.trainer : null;
@@ -1697,34 +1700,17 @@ function finish(sum) {
     if (sum.ghosts && sum.loud > sum.ghosts / 2) missing.push(`Les notes fantasma han sonat massa fortes (${sum.loud} de ${sum.ghosts}).`);
     if (!missing.length && ach < 2 && sum.bars > sum.cleanBars) missing.push(`${nBars(sum.bars - sum.cleanBars)} amb algun error.`);
   }
-  const mBox = $('res-missing');
-  mBox.hidden = !missing.length;
-  $('res-missing-list').innerHTML = missing.slice(0, 3).map((t) => `<li>${esc(t)}</li>`).join('');
-
-  // Adaptació: ajudes
   // Cap cop: segurament la bateria no envia notes (o no s'han fet servir les tecles)
   if (sum.total >= 8 && !S.session.judge.hits.length) tips.unshift(S.hasMidi ? 'No ha arribat cap cop de la bateria. Revisa el cable USB i, a la configuració, toca un pad per veure si s\'encén.' : 'No ha arribat cap cop. Sense bateria, toca amb el teclat: Espai bombo, F caixa, J charles.');
   const poor = sum.stars === 0 || sum.cleanBars < sum.bars / 2;
-  const actions = [];
-  if ((P.mode === 'mission' && P.level) || P.mode === 'route') {
-    const key = P.mode === 'route' ? P.step.id : P.cardId;
-    const streak = (p.poorStreak[key] = poor ? (p.poorStreak[key] ?? 0) + 1 : 0);
-    const minSup = P.mode === 'route' ? 0 : P.level.supports;
-    if (poor && streak >= 2 && P.supports < 2) {
-      P.supports++;
-      saveSupports();
-      applyView();
-      tips.unshift(P.supports === 1 ? 'He tornat a posar la partitura al costat de la carta.' : 'He posat més ajudes: ara la bateria dibuixada t’avisa de cada cop.');
-    } else if (sum.stars === 3 && P.supports > 0 && P.supports >= minSup && P.mode === 'mission') {
-      P.supports--;
-      saveSupports();
-      applyView();
-      tips.push(P.supports === 0 ? 'Molt bé! La propera vegada, prova-ho llegint només la carta.' : 'Molt bé! Traiem una ajuda: els pads ja no s’encenen abans.');
-    }
-    store.save();
-  }
+  if (P.mode === 'route' && P.step.id !== 'canco' && sum.stars >= 2 && P.tempo < P.songTempo) tips.push(`El tempo de la cançó és ${P.songTempo}: quan vulguis, puja-hi a poc a poc.`);
+  // «Què t'ha faltat»: el que ha mesurat el jutge i, a sota, els seus consells (informació, no decisió)
+  const mBox = $('res-missing');
+  mBox.hidden = !missing.length && !tips.length;
+  $('res-missing-list').innerHTML = missing.slice(0, 3).map((t) => `<li>${esc(t)}</li>`).join('');
+  $('res-tips').innerHTML = tips.slice(0, 3).map((t) => `<li>${esc(t)}</li>`).join('');
 
-  // Quantes vegades seguides queda «En procés» (per recomanar un pas enrere)
+  // Quantes vegades seguides queda «En procés» (per a la proposta que el joc es guarda sense mostrar-la)
   const achKey = P.mode === 'route' ? P.step.id : P.mode === 'tempo' ? 'tempo' : P.mode === 'style' ? `st:${P.cardId}` : P.cardId;
   let procStreak = 0;
   if (p && (sum.total || T)) {
@@ -1732,165 +1718,226 @@ function finish(sum) {
     procStreak = p.procStreak[achKey] = ach === 0 ? (p.procStreak[achKey] ?? 0) + 1 : 0;
     store.save();
   }
-  const again = (label, fn, primary = false) => actions.push({ label, fn, primary });
   const retry = (quick = true) => { $('result').hidden = true; startSession({ quick }); };
   let news = '';
   const voiceBox = $('res-voice');
   voiceBox.hidden = true;
-  if (P.mode === 'route' && P.step.id === 'canco') {
-    again('Torna-hi', () => retry(), true);
-    if (P.tempo < P.songTempo) again(`Més ràpid (${Math.min(P.songTempo, P.tempo + 8)})`, () => { setTempo(Math.min(P.songTempo, P.tempo + 8)); retry(); });
-  } else if (P.mode === 'route') {
+  if (P.mode === 'route' && P.step.id !== 'canco') {
     const st = P.step;
-    const i = ALL_STEPS.findIndex((x) => x.id === st.id);
-    const next = ALL_STEPS[i + 1];
-    const goNext = () => (next ? openStep(next.id) : nav('map'));
-    const needVoice = st.voice && sum.stars >= 2 && !rec?.voiceOk;
-    if (needVoice) {
+    if (st.voice && sum.stars >= 2 && !rec?.voiceOk) {
       voiceBox.hidden = false;
-      voiceBox.innerHTML = `<p>🎤 ${st.voice === 'sing' ? 'Has pogut cantar mentre tocaves?' : 'Has pogut comptar en veu alta mentre tocaves?'}</p><span class="muted small">Sigues sincer/a: el pas es dona per fet quan ho has pogut fer alhora.</span>`;
-      again(`Sí, ho he fet! ${next ? 'Següent pas →' : 'Full de ruta'}`, () => { rec.voiceOk = true; store.save(); goNext(); }, true);
-      again('Encara no: torna-hi', () => retry());
-    } else if (sum.stars >= 2) {
-      if (P.tempo < P.songTempo) tips.push(`Per acostar-te al tempo de la cançó (${P.songTempo}), tanca el resultat (Esc) i puja el tempo amb ↑.`);
-      again(next ? `Següent pas: ${stepCode(next)} →` : 'Full de ruta →', goNext, true);
-      again('Torna-hi', () => retry());
-      if (P.tempo < P.songTempo) again(`Més ràpid (${Math.min(P.songTempo, P.tempo + 8)})`, () => { setTempo(Math.min(P.songTempo, P.tempo + 8)); retry(); });
-    } else if (poor) {
-      again('♪ T’ho ensenyo i tornem-hi', () => { setTempo(P.tempo - 8); retry(false); }, true);
-      again('Torna-hi', () => retry());
-    } else {
-      again('Torna-hi', () => retry(), true);
-      if (P.tempo > 60) again(`Més lent (${P.tempo - 8})`, () => { setTempo(P.tempo - 8); retry(); });
+      voiceBox.innerHTML = `<p>🎤 ${st.voice === 'sing' ? 'Has pogut cantar mentre tocaves?' : 'Has pogut comptar en veu alta mentre tocaves?'}</p><span class="muted small">Sigues sincer/a: el pas es dona per fet quan ho has pogut fer alhora.</span><div class="row"></div>`;
+      const vb = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.addEventListener('click', fn); voiceBox.querySelector('.row').appendChild(b); };
+      vb('Sí, ho he fet', () => { rec.voiceOk = true; store.save(); voiceBox.innerHTML = `<p>${stepDone(st.id) ? `Pas ${esc(stepCode(st))} fet!` : 'Apuntat.'}</p>`; });
+      vb('Encara no', () => { voiceBox.innerHTML = '<p>D’acord: quan ho puguis fer alhora, el pas quedarà fet.</p>'; });
     }
     if (!wasDone && stepDone(st.id)) news = `Pas ${stepCode(st)} fet! ${levelDone(st.level) === st.level.passos.length ? `Has acabat el nivell ${st.level.n}! 🎉` : ''}`;
-    again('Nivell', () => nav('level', { n: st.level.n, step: st.id }));
-  } else if (P.mode === 'mission') {
-    if (poor) {
-      again('♪ T’ho ensenyo i tornem-hi', () => { setTempo(P.tempo - 8); retry(false); }, true);
-      again('Torna-hi', () => retry());
-    } else {
-      again('Torna-hi', () => retry(), sum.stars < 3);
-      if (sum.stars >= 2) again(`Més ràpid (${P.tempo + 8})`, () => { setTempo(P.tempo + 8); retry(); }, sum.stars === 3);
-    }
-  } else if (P.mode === 'tempo') {
-    again('Torna-hi', () => retry(), true);
-    again(`Més ràpid (${P.tempo + 8})`, () => { setTempo(P.tempo + 8); retry(); });
-    again(`Més lent (${P.tempo - 8})`, () => { setTempo(P.tempo - 8); retry(); });
-    again('Canvia de carta', () => back());
-  } else if (P.mode === 'style') {
-    const list = [...(P.style?.cards ?? []).map((c) => c.id), ...(P.style?.also ?? [])];
-    const k = list.indexOf(P.cardId);
-    if (!poor && k >= 0 && k < list.length - 1) again('Següent carta de l’estil →', () => openStyleCardFor(list[k + 1], P.style), true);
-    again('Torna-hi', () => retry(), poor || k === list.length - 1);
-    if (!poor && P.tempo < P.styleTempo) again(`Més ràpid (${Math.min(P.styleTempo, P.tempo + 8)})`, () => { setTempo(Math.min(P.styleTempo, P.tempo + 8)); retry(); });
-    if (poor) again('♪ T’ho ensenyo i tornem-hi', () => { setTempo(P.tempo - 8); retry(false); });
-  } else {
-    again('Torna-hi', () => retry(), true);
   }
-  if (deviceLag) actions.push({ lag: true, label: `Compensa el retard (${Math.abs(deviceLag)} ms)`, fn: () => {
+
+  // 3. «Què creus que necessites ara?»: el joc pregunta, no recomana. Cada opció porta directament a fer-ho.
+  const opts = [];
+  const opt = (id, label, fn, target = achKey) => opts.push({ id, label, fn, target });
+  const setSup = (n) => { P.supports = n; saveSupports(); applyView(); };
+  const VT_NAME = { score: 'la partitura', lanes: 'la pista', guio: 'el guió' };
+  const maxT = P.mode === 'route' ? P.songTempo : P.mode === 'style' ? P.styleTempo : 200;
+  const slowT = P.tempo - 8 >= 40 ? P.tempo - 8 : null;
+  const fastT = P.tempo < maxT ? Math.min(maxT, P.tempo + 8) : null;
+  const ri = P.mode === 'route' ? ALL_STEPS.findIndex((x) => x.id === P.step.id) : -1;
+  const BASE_STEP = { kk: 'd1a', sn: 'd1b', hh: 'd1c', crash: 'd2c', oh: 'd6a', t1: 'd5a', t2: 'd5a', t3: 'd5a' };
+  const wi = sum.worst && BASE_STEP[sum.worst.cls] ? ALL_STEPS.findIndex((x) => x.id === BASE_STEP[sum.worst.cls]) : -1;
+  const baseStep = ri > 0 && wi >= 0 && wi < ri ? ALL_STEPS[wi] : null;
+  const prevStep = ri > 0 ? ALL_STEPS[ri - 1] : null;
+  const nextStep = ri >= 0 ? ALL_STEPS[ri + 1] ?? null : null;
+  const cardList = P.mode === 'mission' && P.level ? P.level.missions : P.mode === 'style' ? [...(P.style?.cards ?? []).map((c) => c.id), ...(P.style?.also ?? [])] : null;
+  const ck = cardList ? cardList.indexOf(P.cardId) : -1;
+  const openCard = (id) => (P.mode === 'style' ? openStyleCardFor(id, P.style) : openMission(id));
+  const cardKey = (id) => (P.mode === 'style' ? `st:${id}` : id);
+  const prevCard = ck > 0 ? cardList[ck - 1] : null;
+  const nextCard = ck >= 0 && ck < cardList.length - 1 ? cardList[ck + 1] : null;
+  // Ja ho tenies abans d'aquest intent?
+  const prevTop = (P.mode === 'route' && wasDone) || prevStars >= 3 || (p?.choices ?? []).some((c) => c.key === achKey && c.level === 2);
+
+  if (slowT) opt('slower', `Baixar el tempo (${slowT})`, () => { setTempo(slowT); retry(); });
+  if (fastT) opt('faster', `Pujar el tempo (${fastT})`, () => { setTempo(fastT); retry(); });
+  if (!(P.mode === 'route' && P.step.id === 'canco')) opt('demo', 'Escoltar-ho primer i tornar-hi', () => retry(false));
+  if (P.supports < 2) opt('helpOn', P.supports === 0 ? `Posar ajuda: ${VT_NAME[P.viewType] ?? 'la partitura'} al costat de la carta` : 'Posar ajuda: els pads s’encenen abans de cada cop', () => { setSup(P.supports + 1); retry(); });
+  if (P.supports > 0) opt('helpOff', P.supports === 2 ? 'Treure ajuda: els pads ja no s’encenen' : 'Treure ajuda: només la carta', () => { setSup(P.supports - 1); retry(); });
+  if (baseStep && sum.worst.cls === 'kk') opt('isolate', `Practicar només el bombo (pas ${stepCode(baseStep)})`, () => openStep(baseStep.id), baseStep.id);
+  else if (baseStep) opt('base', `Tornar al pas ${stepCode(baseStep)} · ${baseStep.titol} (${CLS_NAME[sum.worst.cls]})`, () => openStep(baseStep.id), baseStep.id);
+  if (prevStep && prevStep !== baseStep) opt('prev', `Tornar al pas anterior: ${stepCode(prevStep)} · ${prevStep.titol}`, () => openStep(prevStep.id), prevStep.id);
+  if (prevCard) opt('prev', `Tornar a la carta anterior: ${cardLabel(cardById(prevCard))}`, () => openCard(prevCard), cardKey(prevCard));
+  opt('repeat', 'Repetir igual', () => retry());
+  if (ri >= 0) opt('next', nextStep ? `Passar al següent: ${stepCode(nextStep)} · ${nextStep.titol}` : 'Passar al full de ruta', () => (nextStep ? openStep(nextStep.id) : nav('map')), nextStep?.id ?? null);
+  if (nextCard) opt('next', `Passar a la carta següent: ${cardLabel(cardById(nextCard))}`, () => openCard(nextCard), cardKey(nextCard));
+  if (P.mode === 'tempo') opt('other', 'Triar una altra carta', () => back(), 'tempo');
+  if (P.mode === 'route' && P.step.id === 'canco') opt('other', 'Triar un pas del full de ruta', () => nav('map'), null);
+  if (ach === 2 && (prevTop || (!wasPathDone && pathDone()))) opt('group', 'Ja no cal: ho porto al grup', () => nav(P.mode === 'route' ? 'map' : 'home'), null);
+
+  // La proposta que hauria fet el joc (la lògica d'abans): es desa, però no es mostra aquí
+  const has = (id) => opts.some((o) => o.id === id);
+  const back1 = has('isolate') ? 'isolate' : has('base') ? 'base' : 'prev';
+  let suggested = 'repeat';
+  if (P.mode === 'route' && P.step.id !== 'canco') {
+    if (!wasPathDone && pathDone()) suggested = 'group';
+    else if (ach >= 1) suggested = ach === 2 && wasDone ? 'group' : 'next';
+    else if (procStreak >= 2) suggested = has('slower') ? 'slower' : back1;
+    else suggested = poor ? 'demo' : 'repeat';
+  } else if (P.mode === 'route') suggested = ach === 2 ? 'group' : procStreak >= 2 ? 'slower' : 'repeat';
+  else if (P.mode === 'mission' || P.mode === 'style') {
+    if (ach === 2) suggested = nextCard ? 'next' : 'group';
+    else if (procStreak >= 2) suggested = 'slower';
+    else if (poor) suggested = 'demo';
+    else suggested = P.mode === 'style' && nextCard ? 'next' : 'repeat';
+  } else if (T) suggested = ach === 2 ? 'faster' : procStreak >= 2 ? 'slower' : 'repeat';
+  if (!has(suggested)) suggested = has(back1) && suggested !== 'repeat' && ach === 0 ? back1 : 'repeat';
+
+  // Entre 4 i 6 opcions, en un ordre fix (no es posa primer la que el joc creu millor)
+  const DROP = ach === 0 ? ['faster', 'helpOff', 'other', has('base') || has('isolate') ? 'prev' : '', 'demo', 'helpOn', 'prev'] : ach === 1 ? ['isolate', 'base', 'demo', 'helpOn', 'other', 'prev'] : ['isolate', 'base', 'demo', 'helpOn', 'slower', 'other', 'prev'];
+  for (const id of DROP) {
+    if (opts.length <= 6) break;
+    const j = opts.findIndex((o) => o.id === id && o.id !== suggested);
+    if (j >= 0) opts.splice(j, 1);
+  }
+  opts.sort((a, b) => CHOICE_IDS.indexOf(a.id) - CHOICE_IDS.indexOf(b.id));
+
+  // Registre de decisions: el nivell del següent intent relacionat diu si la tria ha funcionat
+  let entry = null;
+  if (p && (sum.total || T)) {
+    p.choices ??= [];
+    const last = p.choices[p.choices.length - 1];
+    if (last && last.nextLevel == null) {
+      // Si no va triar cap opció però ha tornat a tocar el mateix, deduïm què ha canviat
+      if (!last.choice && last.key === achKey) {
+        last.choice = P.tempo < last.tempo ? 'slower' : P.tempo > last.tempo ? 'faster' : P.supports > last.sup ? 'helpOn' : P.supports < last.sup ? 'helpOff' : 'repeat';
+        last.choiceLabel = CHOICE_NAME[last.choice];
+        last.target = achKey;
+        last.inferred = true;
+      }
+      if (last.choice && last.target === achKey) last.nextLevel = ach;
+    }
+    const where = P.mode === 'route' ? (P.step.id === 'canco' ? 'a la cançó sencera' : `al pas ${stepCode(P.step)} (${P.step.titol})`)
+      : T ? 'a l’entrenador de tempo' : P.mode === 'style' ? `a la carta d’estil ${cardLabel(cardById(P.cardId))}` : `a la carta ${cardLabel(cardById(P.cardId))}`;
+    entry = { t: Date.now(), key: achKey, where, level: ach, gaps: (missing[0] ?? '').slice(0, 90), tempo: P.tempo, sup: P.supports, choice: null, target: null, suggested, suggestedLabel: opts.find((o) => o.id === suggested)?.label ?? CHOICE_NAME[suggested], nextLevel: null };
+    p.choices.push(entry);
+    if (p.choices.length > 300) p.choices.splice(0, p.choices.length - 300);
+    store.save();
+  }
+  const choose = (o) => {
+    if (entry) { entry.choice = o.id; entry.choiceLabel = o.label; entry.target = o.target; store.save(); }
+    o.fn();
+  };
+
+  // Final del camí (informació, sense botó)
+  const advBox = $('res-advice');
+  const endNow = !wasPathDone && pathDone();
+  advBox.hidden = !endNow;
+  advBox.innerHTML = endNow ? `<p>${esc(PATH_END)}</p>` : '';
+  if (news) $('res-line').textContent += ` · ${news}`;
+
+  const ul = $('res-choices');
+  ul.innerHTML = '';
+  for (const o of opts) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn res-choice';
+    b.dataset.choice = o.id;
+    b.textContent = o.label;
+    b.addEventListener('click', () => choose(o));
+    const li = document.createElement('li');
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+  // A baix: compensar el retard (si cal) i tornar a mirar la carta
+  const box = $('res-actions');
+  box.innerHTML = '';
+  const small = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-ghost'; b.textContent = label; b.addEventListener('click', fn); box.appendChild(b); };
+  if (deviceLag) small(`Compensa el retard (${Math.abs(deviceLag)} ms)`, () => {
     store.settings().latency = Math.max(-60, Math.min(300, Math.round((store.settings().latency + deviceLag) / 5) * 5));
     store.save();
     setExtraLatency(store.settings().latency);
     toast(`Fet: ara el joc compensa ${store.settings().latency} ms. Es pot canviar a la configuració.`);
     $('result').hidden = true;
-  } });
-  // 3. Què pots fer: consells i, quan escau, una recomanació de nivell amb botó
-  const advice = { text: '', btns: [] };
-  const slower = P.tempo - 8 >= 40 ? { label: `Més lent (${P.tempo - 8})`, fn: () => { setTempo(P.tempo - 8); retry(); } } : null;
-  const BASE_STEP = { kk: 'd1a', sn: 'd1b', hh: 'd1c', crash: 'd2c', oh: 'd6a', t1: 'd5a', t2: 'd5a', t3: 'd5a' };
-  const stuck = ach === 0 && procStreak >= 2;
-  if (P.mode === 'route' && P.step.id !== 'canco') {
-    const st = P.step;
-    const i = ALL_STEPS.findIndex((x) => x.id === st.id);
-    const next = ALL_STEPS[i + 1];
-    if (!wasPathDone && pathDone()) {
-      advice.text = PATH_END;
-      advice.btns.push({ label: 'Què sé fer', fn: () => nav('skills'), primary: true });
-    } else if (ach === 2 && !(st.voice && !rec?.voiceOk)) {
-      const nextTodo = ALL_STEPS.slice(i + 1).find((x) => !stepDone(x.id)) ?? ALL_STEPS.find((x) => !stepDone(x.id));
-      advice.text = wasDone
-        ? 'Això ja ho tens: no cal practicar-ho més aquí. Porta-ho al grup i fes-ho servir a la cançó.'
-        : next && next.level !== st.level ? `Ja ho tens! Pots passar al nivell ${next.level.n}: ${next.level.titol}.` : 'Ja ho tens! Pots passar al pas següent.';
-      if (nextTodo && nextTodo.id !== st.id) {
-        const lbl = nextTodo === next ? `Següent pas: ${stepCode(next)} →` : `Ves al pas ${stepCode(nextTodo)} →`;
-        advice.btns.push({ label: lbl, fn: () => openStep(nextTodo.id), primary: true });
-      }
-    } else if (stuck) {
-      const weak = sum.worst && BASE_STEP[sum.worst.cls];
-      const wi = weak ? ALL_STEPS.findIndex((x) => x.id === weak) : -1;
-      const base = wi >= 0 && wi < i ? ALL_STEPS[wi] : i > 0 ? ALL_STEPS[i - 1] : null;
-      advice.text = `Ja són ${procStreak} vegades seguides «En procés». Val la pena fer un pas enrere: ${slower ? 'baixa el tempo' : ''}${slower && base ? ' o ' : ''}${base ? `repassa ${stepCode(base)} · ${base.titol}${base === ALL_STEPS[wi] ? `, on treballes ${CLS_NAME[sum.worst.cls]}` : ''}` : ''}.`;
-      if (slower) advice.btns.push({ ...slower, primary: true });
-      if (base) advice.btns.push({ label: `Ves al pas ${stepCode(base)}`, fn: () => openStep(base.id) });
-    }
-  } else if (P.mode === 'route') {
-    if (ach === 2) advice.text = 'Ja ho tens: la cançó sencera et surt. Porta-la al grup.';
-    else if (stuck && slower) { advice.text = `Ja són ${procStreak} vegades seguides «En procés»: prova-la més a poc a poc.`; advice.btns.push({ ...slower, primary: true }); }
-  } else if (P.mode === 'mission' && P.level) {
-    const list = P.level.missions;
-    const k = list.indexOf(P.cardId);
-    if (ach === 2 && k >= 0 && k < list.length - 1) {
-      const nx = list[k + 1];
-      advice.text = 'Ja ho tens! Pots passar a la carta següent.';
-      advice.btns.push({ label: `Següent carta: ${cardLabel(cardById(nx))} →`, fn: () => openMission(nx), primary: true });
-    } else if (ach === 2) advice.text = 'Ja ho tens! Porta aquesta carta al grup.';
-    else if (stuck) {
-      const pv = k > 0 ? list[k - 1] : null;
-      advice.text = `Ja són ${procStreak} vegades seguides «En procés». Baixa el tempo${pv ? ' o torna a la carta anterior' : ''}.`;
-      if (slower) advice.btns.push({ ...slower, primary: true });
-      if (pv) advice.btns.push({ label: `Carta anterior: ${cardLabel(cardById(pv))}`, fn: () => openMission(pv) });
-    }
-  } else if (P.mode === 'style') {
-    const list = [...(P.style?.cards ?? []).map((c) => c.id), ...(P.style?.also ?? [])];
-    const k = list.indexOf(P.cardId);
-    if (ach === 2) {
-      advice.text = k >= 0 && k < list.length - 1 ? 'Ja ho tens! Prova la carta següent de l’estil.' : 'Ja ho tens! Porta l’estil al grup.';
-      if (k >= 0 && k < list.length - 1) advice.btns.push({ label: 'Següent carta de l’estil →', fn: () => openStyleCardFor(list[k + 1], P.style), primary: true });
-    } else if (stuck && slower) { advice.text = `Ja són ${procStreak} vegades seguides «En procés»: baixa el tempo.`; advice.btns.push({ ...slower, primary: true }); }
-  } else if (T) {
-    const lastFail = T.rounds.filter((g) => !g.pass && g.drift != null).pop();
-    if (lastFail && lastFail.drift < -20) tips.unshift('Quan la banda calla tendeixes a córrer: compta en veu baixa i imagina el baix que no sona.');
-    else if (lastFail && lastFail.drift > 20) tips.unshift('Quan la banda calla t’alenteixes: no paris el moviment del braç entre cop i cop.');
-    if (ach === 2) {
-      advice.text = 'Ja ho tens: el pols el portes tu. Prova-ho més ràpid o amb una altra carta, i al grup proveu de parar tots menys la bateria uns compassos.';
-      advice.btns.push({ label: `Més ràpid (${P.tempo + 8})`, fn: () => { setTempo(P.tempo + 8); retry(); }, primary: true });
-    } else if (stuck && slower) {
-      advice.text = `Ja són ${procStreak} vegades seguides «En procés»: baixa el tempo o tria una carta més senzilla.`;
-      advice.btns.push({ ...slower, primary: true });
-    }
-  }
-  if (news) $('res-line').textContent += ` · ${news}`;
-  // Els botons de la recomanació no es repeteixen a baix
-  const advLabels = new Set(advice.btns.map((b) => b.label));
-  actions.splice(0, actions.length, ...actions.filter((a) => !advLabels.has(a.label)));
-  if (advice.btns.some((b) => b.primary)) for (const a of actions) a.primary = false;
-  // Com a molt tres botons: el principal, un altre (o compensar el retard) i «Mira la carta»
-  const main = actions.filter((a) => !a.lag);
-  const lag = actions.find((a) => a.lag);
-  actions.splice(0, actions.length, ...[main[0], lag ?? main[1]].filter(Boolean));
-  again('Mira la carta', () => { $('result').hidden = true; $('btn-go').focus(); setKeys(playKeys()); });
-  if (!tips.length && !advice.text) tips.push(ach === 2 ? 'Torna-hi més ràpid o porta-ho al grup.' : 'Torna-hi: fixa’t en la carta i escolta el baix.');
-  $('res-tips').innerHTML = tips.slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('');
-  const makeBtn = (a, parent) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = `btn${a.primary ? ' btn-primary' : ''}`;
-    b.textContent = a.label;
-    b.addEventListener('click', a.fn);
-    parent.appendChild(b);
-  };
-  const advBox = $('res-advice');
-  advBox.hidden = !advice.text;
-  advBox.innerHTML = advice.text ? `<p>${esc(advice.text)}</p><div class="row"></div>` : '';
-  for (const a of advice.btns) makeBtn(a, advBox.querySelector('.row'));
-  const box = $('res-actions');
-  box.innerHTML = '';
-  for (const a of actions) makeBtn(a, box);
+  });
+  small('Mira la carta', () => { $('result').hidden = true; $('btn-go').focus(); setKeys(playKeys()); });
   $('result').hidden = false;
-  setKeys([['Enter', 'botó vermell'], ['←→', 'tria'], ['Esc', 'mira la carta']]);
-  if (P.mode === 'route') setKeys([['Enter', 'botó vermell'], ['←→', 'tria'], ['Esc', 'mira la carta'], ['Esc Esc', 'tornar al nivell']]);
-  ($('result').querySelector('.btn-primary') ?? box.querySelector('button'))?.focus();
+  setKeys([['↑↓←→', 'tria'], ['Enter', 'fes-ho'], ['Esc', 'mira la carta'], ...(P.mode === 'route' ? [['Esc Esc', 'tornar al nivell']] : [])]);
+  (voiceBox.hidden ? ul.querySelector('button') : voiceBox.querySelector('button'))?.focus();
+}
+
+// ---- Com tries el teu camí (metaavaluació a «Què sé fer») -------------------------------------------------------
+const CHOICE_IDS = ['slower', 'faster', 'demo', 'helpOn', 'helpOff', 'isolate', 'base', 'prev', 'repeat', 'next', 'other', 'group'];
+const CHOICE_NAME = {
+  slower: 'Baixar el tempo', faster: 'Pujar el tempo', demo: 'Escoltar-ho primer', helpOn: 'Posar una ajuda', helpOff: 'Treure una ajuda',
+  isolate: 'Practicar només la peça que falla', base: 'Tornar a un pas que treballa la peça que falla', prev: 'Tornar enrere',
+  repeat: 'Repetir igual', next: 'Passar al següent', other: 'Triar una altra cosa', group: 'Portar-ho al grup',
+};
+const CHOICE_VERB = {
+  slower: 'baixar el tempo', faster: 'pujar el tempo', demo: 'escoltar-ho primer', helpOn: 'posar una ajuda', helpOff: 'treure una ajuda',
+  isolate: 'practicar només la peça que falla', base: 'tornar a un pas que treballa la peça que falla', prev: 'tornar enrere',
+  repeat: 'repetir igual', next: 'passar al següent', other: 'canviar de carta o de pas', group: 'portar-ho al grup',
+};
+const MIN_CHOICES = 5;
+/** Frases d'observació a partir del registre: si les tries t'han funcionat (no si coincideixen amb el joc). */
+function pathInsights(all) {
+  const L = all.filter((c) => c.choice);
+  const done = L.filter((c) => c.nextLevel != null);
+  const good = (c) => c.nextLevel > c.level || c.nextLevel === 2;
+  const vegades = (n) => `${n} ${n === 1 ? 'vegada' : 'vegades'}`;
+  const out = [];
+  const cnt = {};
+  for (const c of L) if (c.choice !== 'group' && c.choice !== 'other') cnt[c.choice] = (cnt[c.choice] ?? 0) + 1;
+  const ranked = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+  // a) La tria que més fas i si et funciona
+  const top = ranked[0];
+  if (top && top[1] >= 2) {
+    const id = top[0];
+    const mine = L.filter((c) => c.choice === id);
+    const r = done.filter((c) => c.choice === id);
+    const g = r.filter(good).length;
+    const lead = mine.every((c) => c.level === 0) ? `Quan et costa, sols ${CHOICE_VERB[id]}` : `La tria que més fas és ${CHOICE_VERB[id]} (${vegades(top[1])})`;
+    if (r.length >= 2) {
+      const rate = g / r.length;
+      out.push(rate >= 0.6 ? `${lead}, i et funciona: t’ha anat millor ${g} de ${r.length} vegades.`
+        : rate < 0.4 ? `${lead}, però només t’ha anat millor ${g} de ${r.length} vegades. Potser val la pena provar una altra cosa.`
+          : `${lead}: unes vegades et funciona i d’altres no (${g} de ${r.length}).`);
+    } else out.push(`${lead}. Quan hi hagi més intents després d’aquesta tria, veuràs si et funciona.`);
+  }
+  // b) Repetir igual en cadena sense millorar
+  let run = 0;
+  let chain = false;
+  for (const c of L) {
+    if (c.choice === 'repeat' && c.level < 2 && (c.nextLevel == null || c.nextLevel <= c.level)) { run++; if (run >= 3) chain = true; } else run = 0;
+  }
+  if (chain) out.push('Repeteixes igual moltes vegades seguides sense canviar res. Quan no surt, prova de canviar alguna cosa (tempo, ajuda, practicar la part que falla).');
+  // c) Avançar des d'«En procés»
+  const early = L.filter((c) => c.choice === 'next' && c.level === 0);
+  if (early.length >= 2) {
+    const r = early.filter((c) => c.nextLevel != null);
+    const hard = r.filter((c) => c.nextLevel === 0).length;
+    if (!r.length) out.push(`Sovint passes al següent abans d’arribar a «A prop» (${vegades(early.length)}).`);
+    else if (hard >= r.length / 2) out.push('Sovint passes al següent abans d’arribar a «A prop». Quan ho has fet, el pas següent t’ha costat més.');
+    else out.push('A vegades passes al següent encara «En procés», i t’ha anat bé: també és una manera d’aprendre.');
+  }
+  // d) Tornar a practicar el que ja tens
+  const again = L.filter((c) => c.level === 2 && ['repeat', 'prev', 'base', 'isolate', 'slower', 'demo', 'helpOn'].includes(c.choice));
+  if (again.length >= 2) out.push('Tornes a practicar coses que ja tens a «Ja ho tens!»: quan ja ho tens, pots avançar o portar-ho al grup.');
+  // e) Autonomia: treure ajuda, pujar el tempo, portar-ho al grup
+  if (L.some((c) => c.choice === 'helpOff' && c.level >= 1)) out.push('Treus l’ajuda quan ja estàs a prop: bona decisió, és el camí per deixar l’eina.');
+  else if (L.some((c) => c.choice === 'faster' && c.level >= 1)) out.push('Puges el tempo quan ja et surt: així t’acostes a com sonarà amb el grup.');
+  else if (L.some((c) => c.choice === 'group')) out.push('Quan ja ho tens, ho portes al grup: és on té sentit tot plegat.');
+  // f) La tria que millor et funciona (si no és la que més fas)
+  const best = Object.keys(cnt).map((id) => { const r = done.filter((c) => c.choice === id); return { id, n: r.length, g: r.filter(good).length }; })
+    .filter((x) => x.n >= 2 && x.g / x.n >= 0.6 && x.id !== top?.[0]).sort((a, b) => b.g / b.n - a.g / a.n)[0];
+  if (best) out.push(`El que millor t’ha funcionat és ${CHOICE_VERB[best.id]}: t’ha anat millor ${best.g} de ${best.n} vegades.`);
+  return out.slice(0, 4);
+}
+function pathChoicesHtml(p) {
+  const L = (p?.choices ?? []).filter((c) => c.choice);
+  if (L.length < MIN_CHOICES) return '<p class="muted small">Cada cop que acabes de tocar, tries com vols continuar. Quan hagis triat unes quantes vegades, aquí veuràs quines tries et funcionen.</p>';
+  const ins = pathInsights(L);
+  const lines = L.slice(-8).reverse().map((c) => `<li>${esc(capFirst(c.where))} estaves <b>«${ACH_NAME[c.level]}»</b>: vas triar <em>${esc(c.choiceLabel ?? CHOICE_NAME[c.choice])}</em>${c.nextLevel != null ? ` → després <b>«${ACH_NAME[c.nextLevel]}»</b>` : ''}.${c.suggested && c.suggested !== c.choice ? ` Una altra opció era <em>${esc(c.suggestedLabel ?? CHOICE_NAME[c.suggested])}</em>.` : ''}</li>`);
+  return `<ul class="path-ins">${(ins.length ? ins : ['Encara no hi ha prou intents després de les teves tries per veure què et funciona. Continua triant i aquí ho veuràs.']).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <details class="path-log"><summary>Les teves últimes decisions</summary><ul>${lines.join('')}</ul></details>`;
 }
 
 // ---- Perfil ----------------------------------------------------------------------------------------------------------------
