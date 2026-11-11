@@ -6,7 +6,7 @@
 import { LANE_LABEL, LANE_COLOR, PIECES } from './cards.js';
 
 const HIT_X = 0.2; // on és la línia de cop (fracció de l'amplada)
-const VERDICT_COLOR = { perfect: '#44d17a', good: '#b7e36b', near: '#ffb347', missed: '#ff5a5a', wrong: '#ff5a5a' };
+const VERDICT_COLOR = { perfect: '#1f9d55', good: '#6bbf3a', near: '#f08c00', missed: '#d64545', wrong: '#d64545' };
 
 export function createLanes(canvas) {
   const g = canvas.getContext('2d');
@@ -42,7 +42,7 @@ export function createLanes(canvas) {
     if (!W) resize();
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
-    g.fillStyle = '#1b1a1b';
+    g.fillStyle = '#fbfaf7';
     g.fillRect(0, 0, W, H);
     if (!s) return;
 
@@ -54,7 +54,7 @@ export function createLanes(canvas) {
     // Carrils
     lanes.forEach((lane, i) => {
       const y = laneY(lane);
-      g.fillStyle = i % 2 ? '#232123' : '#282628';
+      g.fillStyle = i % 2 ? '#f4f0e8' : '#eee9df';
       g.fillRect(0, y - lh / 2, W, lh);
     });
 
@@ -69,19 +69,19 @@ export function createLanes(canvas) {
         const x = xOf(t);
         if (x < -10 || x > W + 10) continue;
         const onBeat = k % sub === 0;
-        g.strokeStyle = k === 0 ? 'rgba(255,255,255,.35)' : onBeat ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.05)';
+        g.strokeStyle = k === 0 ? 'rgba(31,30,28,.35)' : onBeat ? 'rgba(31,30,28,.14)' : 'rgba(31,30,28,.06)';
         g.lineWidth = k === 0 ? 2 : 1;
         g.beginPath(); g.moveTo(x, 22); g.lineTo(x, H); g.stroke();
-        g.fillStyle = onBeat ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.35)';
+        g.fillStyle = onBeat ? 'rgba(31,30,28,.75)' : 'rgba(31,30,28,.4)';
         g.font = `${onBeat ? 700 : 400} 12px Ubuntu, system-ui, sans-serif`;
         g.textAlign = 'center';
         g.fillText(onBeat ? String(k / sub + 1) : sub === 3 ? (k % 3 === 1 ? 'i' : 'a') : 'i', x, 15);
       }
       if (info) {
         const x = xOf(start);
-        const label = info.kind === 'demo' ? 'ESCOLTA' : info.kind === 'count' ? (info.entryBreak ? 'BREAK · ENTRADA' : 'PREPARA’T') : info.kind === 'play' ? (info.quiet ? '🤫 EN SILENCI' : info.part ? info.part.toUpperCase() : '') : info.kind === 'end' ? 'FINAL' : '';
+        const label = info.kind === 'demo' ? 'ESCOLTA' : info.kind === 'count' ? (info.entryBreak ? 'BREAK · ENTRADA' : 'PREPARA’T') : info.kind === 'play' ? (info.quiet ? 'EN SILENCI' : info.part ? info.part.toUpperCase() : '') : info.kind === 'end' ? 'FINAL' : '';
         if (label && x > W * HIT_X - 200 && x < W) {
-          g.fillStyle = info.kind === 'demo' ? '#7fc8ff' : info.kind === 'count' ? '#fdbe10' : 'rgba(255,255,255,.6)';
+          g.fillStyle = info.kind === 'demo' ? '#1f7ac2' : info.kind === 'count' ? '#a87400' : 'rgba(31,30,28,.6)';
           g.font = '700 11px Ubuntu, system-ui, sans-serif';
           g.textAlign = 'left';
           g.fillText(label, x + 6, 30);
@@ -98,7 +98,7 @@ export function createLanes(canvas) {
     const hx = W * HIT_X;
     g.fillStyle = 'rgba(253,190,16,.18)';
     g.fillRect(hx - 3, 22, 6, H);
-    g.strokeStyle = '#fdbe10';
+    g.strokeStyle = '#e3a600';
     g.lineWidth = 2;
     g.beginPath(); g.moveTo(hx, 22); g.lineTo(hx, H); g.stroke();
 
@@ -114,7 +114,7 @@ export function createLanes(canvas) {
         }
       }
     } else {
-      g.fillStyle = 'rgba(255,255,255,.55)';
+      g.fillStyle = 'rgba(31,30,28,.55)';
       g.font = '600 14px Ubuntu, system-ui, sans-serif';
       g.textAlign = 'center';
       g.fillText('Mira la carta: les rodones ja no surten a la pista', (W * (1 + HIT_X)) / 2, H / 2);
@@ -126,7 +126,7 @@ export function createLanes(canvas) {
       const x = xOf(m.time);
       if (x < -20) { marks.splice(i, 1); continue; }
       const y = laneY(m.lane);
-      g.strokeStyle = m.kind === 'extra' || m.kind === 'wrong' ? '#ff5a5a' : '#ffffff';
+      g.strokeStyle = m.kind === 'extra' || m.kind === 'wrong' ? '#d64545' : '#1f1e1c';
       g.lineWidth = 3;
       g.beginPath(); g.moveTo(x, y - lh * 0.42); g.lineTo(x, y + lh * 0.42); g.stroke();
     }
@@ -183,7 +183,7 @@ export function createLanes(canvas) {
     if (n.kind === 'demo' && past && x > W * HIT_X - 40) {
       // la demostració encén la rodona quan sona
       g.globalAlpha = Math.max(0, 1 - (W * HIT_X - x) / 40);
-      g.strokeStyle = '#fff'; g.lineWidth = 2;
+      g.strokeStyle = '#1f1e1c'; g.lineWidth = 2;
       g.beginPath(); g.arc(x, y, r + 4, 0, Math.PI * 2); g.stroke();
     }
     g.globalAlpha = 1;
