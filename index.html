@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="assets/brand/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@900&family=Poppins:ital,wght@0,500;0,600;0,700;1,600&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script>
     // Qualsevol error surt a la pàgina, perquè es pugui explicar.
@@ -32,13 +32,15 @@
       setTimeout(() => { if (!window.__rockinReady) showPageError(why); }, location.protocol === 'file:' ? 300 : 6000);
     });
   </script>
+<link rel="stylesheet" href="/marca/capcalera.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#" id="home-link" title="Inici" tabindex="-1">
-      <img src="https://rockin.cat/wp-content/uploads/2022/07/rockin-logo.svg" alt="Rockin" onerror="this.outerHTML='<b class=&quot;wordmark&quot;>ROCKIN</b>'">
-      <span>Bateria</span>
-    </a>
+  <header class="topbar rk-cap rk-amb-controls">
+    <div class="rk-marca">
+      <a class="rk-totes" href="/" title="Totes les eines Rockin"><img class="rk-logo" src="/marca/rockin-logo-fosc.png" alt="Rockin" width="382" height="72"></a>
+      <span class="rk-sep" aria-hidden="true"></span>
+      <a class="rk-eina" href="#" id="home-link" title="Inici" tabindex="-1">Bateria</a>
+    </div>
     <button type="button" id="song-chip" class="song-chip" tabindex="-1" hidden><i>♪</i><span></span></button>
     <div class="top-right">
       <button type="button" id="player-chip" class="chip" tabindex="-1" hidden><i>●</i><span></span></button>
@@ -117,7 +119,7 @@
             <label class="ctl tg" id="quiet-wrap" title="La banda calla dos compassos de cada quatre (Q)"><input type="checkbox" id="quiet" tabindex="-1"><span>Compte en silenci <kbd>Q</kbd></span></label>
           </div>
           <button type="button" class="ctl icon-btn" id="btn-help" title="Com es llegeix la carta i la partitura (?)" tabindex="-1">? Ajuda</button>
-          <button type="button" class="ctl icon-btn" id="btn-full" title="Pantalla completa" tabindex="-1">⛶</button>
+          <button type="button" class="ctl icon-btn" id="btn-full" title="Pantalla completa" aria-label="Pantalla completa" tabindex="-1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
         </div>
       </div>
 
@@ -150,7 +152,7 @@
             <div class="guio-wrap" id="guio-wrap"></div>
             <div class="none-msg" id="none-msg"><b>Llegeix la carta.</b><span>La partitura i la pista estan amagades. Els teus cops surten igualment a la carta i a la bateria.</span></div>
             <div class="verdicts" id="verdicts"></div>
-            <div class="quiet-cover" id="quiet-cover"><b>🤫 Aguanta el tempo</b><span>La banda calla. Continua tocant la carta: quan torni, veuràs on has caigut.</span></div>
+            <div class="quiet-cover" id="quiet-cover"><b>Aguanta el tempo</b><span>La banda calla. Continua tocant la carta: quan torni, veuràs on has caigut.</span></div>
             <div class="solo-cover" id="solo-cover"><b>SOLO</b><span>Toca el que vulguis. Al compàs següent, tornes al patró!</span></div>
           </div>
           <div id="kit" class="kit"></div>
@@ -219,7 +221,7 @@
 
   <footer class="keybar">
     <div class="keys" id="keys"></div>
-    <span class="ver"><span id="version">v36 · 20 d'octubre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
+    <span class="ver"><span id="version">v37 · 11 de novembre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
   </footer>
   <script type="module" src="js/classe-app.js"></script>
 </body>
