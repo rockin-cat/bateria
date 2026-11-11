@@ -334,8 +334,6 @@ SCREENS.home = (root) => {
       <div class="np-cards"><div class="thumbs big-first n${Math.min(4, cards.length + (hasSolo ? 1 : 0))}">${cards.slice(0, 3).map((c) => `<div class="thumb">${thumb(c)}</div>`).join('')}${hasSolo ? '<div class="thumb thumb-solo">SOLO</div>' : ''}</div></div>
       <div class="np-side">
         <div class="home-map">
-          <h3>Com fer-ho</h3>
-          <ul class="howto-tips">${(st.com ?? []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
           ${raw && stepSong(st, song).form ? `<h3>On canvia la bateria a la cançó</h3>${songMap(st, song, r?.choice)}` : ''}
           <h3>Nivell ${L.n}: els passos</h3>
           <ol class="lvl-steps">${L.passos.map((p) => `<li class="${stepDone(p.id) ? 'ok' : p.id === st.id ? 'now' : ''}"><span>${stepDone(p.id) ? '✓' : p.id.slice(-1).toUpperCase()}</span>${esc(p.titol)}</li>`).join('')}</ol>
@@ -1079,7 +1077,8 @@ function introText() {
   if (P.mode === 'route') {
     const st = P.step;
     const v = st.voice ? ` <b>${st.voice === 'sing' ? 'I canta!' : 'I compta en veu alta!'}</b>` : '';
-    return `${esc(st.text)}${v}`;
+    const com = st.com?.length ? ` <span class="coach-com">${st.com.map(esc).join(' ')}</span>` : '';
+    return `${esc(st.text)}${v}${com}`;
   }
   if (P.mode === 'tempo') return 'Escoltes tres compassos, entres, i després la banda començarà a callar. <b>Continua tocant</b> quan calli!';
   if (P.mode === 'style' && P.style) return esc(P.style.text);
@@ -1492,7 +1491,9 @@ function loop() {
   if (info && S.lastBarShown !== pos.bar) {
     S.lastBarShown = pos.bar;
     if (P.mode === 'route') stripAt(info.kind === 'play' ? info.j % P.bars.length : null);
-    if (info.kind === 'demo') setCoach(`<b>Escolta.</b> El joc toca ${info.card?.brk ? 'el break' : 'la carta'} amb la banda: mira com la pilota salta per la carta.`, 'demo');
+    if (info.kind === 'demo') setCoach(P.mode === 'route' && P.step?.com?.length && !info.card?.brk
+      ? `<b>Escolta i fixa-t’hi.</b> ${P.step.com.map(esc).join(' ')}`
+      : `<b>Escolta.</b> El joc toca ${info.card?.brk ? 'el break' : 'la carta'} amb la banda: mira com la pilota salta per la carta.`, 'demo');
     else if (info.kind === 'count') setCoach(info.entryBreak ? '<b>Prepara’t.</b> El break t’avisa: al compàs següent entres tu!' : `<b>Prepara’t.</b> ${sticksWord(true)} baquetes i entres tu!`, 'count');
     else if (info.kind === 'play' && P.mode === 'tempo') {
       setCoach(info.quiet ? '<b>La banda calla.</b> Continua tocant la carta, sense parar.' : S.trainer?.message ?? '<b>Ara tu!</b> Toca amb la banda.', info.quiet ? 'count' : 'play');
