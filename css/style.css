@@ -551,7 +551,7 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 
 /* Inici: capçalera del pas a dalt i, a sota, la carta tan gran com l'espai i al costat el mapa i el botó */
 .home { grid-template-columns: minmax(0, 1fr) 330px; container-type: size; }
-.home .next-panel { display: grid; grid-template-columns: min(calc((100cqw - 380px) * 0.58), calc((100cqh - 270px) * 1.4)) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 12px 20px; }
+.home .next-panel { display: grid; grid-template-columns: minmax(0, 1fr) clamp(220px, 26cqw, 290px); grid-template-rows: auto auto minmax(0, 1fr); gap: 12px 20px; }
 .home .song-box, .home .step-head { grid-column: 1 / -1; }
 .step-head { display: flex; flex-direction: column; gap: 4px; }
 .step-head h2 { font-size: 22px; display: flex; align-items: center; gap: 12px; }
@@ -647,3 +647,9 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .st .lock svg { width: 14px; height: 14px; vertical-align: -2px; }
 .item span.k { font-size: 11px; color: var(--ink3); }
 .lock-badge { font-weight: 700; font-size: 11px; }
+
+/* Inici: la carta ocupa l'espai; el «com fer-ho» surt quan comença el pas (mentre s'escolta) */
+.coach-com { display: block; margin-top: 4px; color: var(--ink2); font-size: .92em; }
+.home .np-side .go-row { flex-direction: column; align-items: stretch; gap: 8px; }
+.home .np-side .go-row .btn { justify-content: center; width: 100%; }
+.home .np-side .btn-go-big { flex-direction: row; gap: 10px; }
