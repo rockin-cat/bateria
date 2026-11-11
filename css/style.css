@@ -72,7 +72,7 @@ kbd { font: 700 11px Ubuntu, sans-serif; color: var(--ink); background: var(--pa
 
 /* ---- Barra de tecles ---- */
 .keybar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 16px; background: var(--panel); border-top: 1px solid var(--line); font-size: 12px; color: var(--ink3); white-space: nowrap; overflow: hidden; }
-.keys { display: flex; gap: 16px; overflow: hidden; }
+.keys { display: flex; gap: 16px; overflow: hidden; min-width: 0; flex: 1 1 auto; }
 .keys span { display: inline-flex; gap: 5px; align-items: center; }
 .keys kbd { color: var(--focus); }
 .ver { flex: none; }
@@ -485,7 +485,7 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
   body { overflow: auto; grid-template-rows: var(--head) auto auto var(--keys); }
   main { overflow: visible; }
   .view { height: auto; }
-  .home, .songs, .level, .picker, .styles, .play-main, .setup-grid, .res-top, .level-detail { grid-template-columns: 1fr; }
+  .home, .songs, .level, .picker, .styles, .play-main, .setup-grid, .res-top, .level-detail { grid-template-columns: minmax(0, 1fr); }
   .poster-grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; }
   .prof-grid { grid-template-columns: 1fr; }
   .brand span, .chip.toggle span { display: none; }
@@ -692,4 +692,34 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
   .skills { grid-template-columns: minmax(0, 1fr); }
   .skills > .panel, .bag-top > div { min-width: 0; }
   .bag-top b { overflow-wrap: anywhere; }
+}
+
+/* ---- Mòbil: una sola columna (aquestes regles van al final perquè les de dalt no les tapin) ---- */
+@media (max-width: 900px) {
+  .home, .level { container-type: normal; }
+  .home { grid-template-columns: minmax(0, 1fr); }
+  .home .next-panel { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .np-cards, .np-side, .level .level-detail .ld-cards, .level .level-detail .ld-text { grid-column: auto; grid-row: auto; }
+  .np-cards, .level .level-detail .ld-cards { container-type: inline-size; }
+  .thumbs.big-first .thumb, .thumbs.big-first.n2 .thumb:first-child, .thumbs.big-first.n3 .thumb:first-child, .thumbs.big-first.n4 .thumb:first-child { width: min(100%, 520px); }
+  .thumbs.big-first.n2 .thumb:not(:first-child), .thumbs.big-first.n3 .thumb:not(:first-child), .thumbs.big-first.n4 .thumb:not(:first-child) { width: calc(33% - 6px); }
+  .level .level-detail { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .howto-steps, .help-cols { grid-template-columns: minmax(0, 1fr); }
+  .cards { container-type: inline-size; }
+  .cards:not(.multi) .card-frame, .cards.multi .card-slot.big .card-frame { max-width: min(100%, 560px); }
+  .cards.multi .card-slot:not(.big) .card-frame { max-width: 100%; }
+  .guio-part { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .est-row { grid-template-columns: minmax(0, 1fr) 30px minmax(60px, 1fr) 48px; gap: 6px; }
+  .song-box { flex-wrap: wrap; }
+  .song-box .disc { width: 40px; height: 40px; }
+  .song-box .t { flex: 1 1 200px; }
+  .song-box > .row { width: 100%; flex-wrap: wrap; }
+  .song-box .parts { display: flex; flex-wrap: wrap; gap: 4px; }
+  .keys { display: none; }
+  .keybar { justify-content: center; }
+  body { grid-template-columns: minmax(0, 1fr); }
+}
+/* Pantalles tàctils: sense les dreceres de teclat */
+@media (hover: none) and (pointer: coarse) {
+  kbd, .keys { display: none !important; }
 }
