@@ -653,3 +653,43 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .home .np-side .go-row { flex-direction: column; align-items: stretch; gap: 8px; }
 .home .np-side .go-row .btn { justify-content: center; width: 100%; }
 .home .np-side .btn-go-big { flex-direction: row; gap: 10px; }
+
+/* «Què sé fer» · Com vas: primer, com t'estudies (avaluació formadora) */
+.com-grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); }
+.com-grid .estrat { grid-column: 1; grid-row: 1 / 4; }
+.com-grid .kpis { grid-column: 2 / 4; grid-row: 1; }
+.com-grid > .panel:nth-child(3) { grid-column: 2; grid-row: 2; }
+.com-grid > .panel:nth-child(4) { grid-column: 3; grid-row: 2; }
+.com-grid > .panel:nth-child(5) { grid-column: 2 / 4; grid-row: 3; }
+.estrat h2 { margin-bottom: 2px; }
+.estrat h3 { margin: 14px 0 6px; }
+.est-ins { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.est-ins li { background: var(--panel2); border-left: 4px solid var(--red); border-radius: 6px; padding: 8px 11px; font-size: 14px; }
+.est-buit { background: var(--panel2); border-radius: 8px; padding: 10px 12px; font-size: 14px; color: var(--ink2); }
+.est-taula { display: flex; flex-direction: column; gap: 7px; }
+.est-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px minmax(80px, 1fr) 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.est-row .n { color: var(--ink3); text-align: right; font-size: 12.5px; }
+.est-row b { text-align: right; font-size: 13px; }
+.est-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--sunk); }
+.est-bar i, .est-llegenda i { display: block; height: 100%; }
+.est-bar .g, .est-llegenda .g { background: var(--ok); }
+.est-bar .s, .est-llegenda .s { background: #c9c2b4; }
+.est-bar .w, .est-llegenda .w { background: var(--ko); }
+.est-llegenda { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink3); margin: 8px 0 4px; }
+.est-llegenda span { display: inline-flex; align-items: center; gap: 5px; }
+.est-llegenda i { width: 10px; height: 10px; border-radius: 2px; }
+.hist-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 12px; height: 100%; }
+.scr-head .right { display: flex; gap: 10px; align-items: center; }
+@media (max-width: 900px) {
+  .com-grid, .hist-grid { grid-template-columns: 1fr; grid-template-rows: none; height: auto; }
+  .com-grid > * { grid-column: auto !important; grid-row: auto !important; }
+}
+@media (max-width: 700px) {
+  body { grid-template-rows: auto auto 1fr var(--keys); }
+  .top-right { flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; min-width: 0; padding: 4px 0; }
+  .scr-head { flex-wrap: wrap; }
+  .scr-head .right { flex-wrap: wrap; }
+  .skills { grid-template-columns: minmax(0, 1fr); }
+  .skills > .panel, .bag-top > div { min-width: 0; }
+  .bag-top b { overflow-wrap: anywhere; }
+}
