@@ -311,12 +311,11 @@ SCREENS.home = (root) => {
   const r = routeRec(st.id);
   const menu = [
     ['map', 'R', 'Full de ruta', `Els 10 nivells del pòster · ${done} de ${ALL_STEPS.length} passos`, () => nav('map')],
-    ['bag', 'Q', 'Què sé fer', 'La motxilla: el que pots fer a la banda', () => nav('skills')],
+    ['bag', 'Q', 'Què sé fer', 'A la banda, com vas i com t’estudies', () => nav('skills')],
     ['note', 'C', 'La cançó', raw ? `Ara: ${raw.titol}` : 'Tria amb quina cançó aprens', () => nav('song')],
     ['drum', 'B', 'Toca amb la banda', 'Qualsevol carta, fins que diguis prou', () => nav('cards', { mode: 'free' })],
     ['clock', 'T', 'Entrenador de tempo', 'La banda calla: aguanta el pols', () => nav('cards', { mode: 'tempo' })],
     ['palette', 'E', "Inspirador d'estils", 'Del rock a la bossa nova', () => nav('styles')],
-    ['chart', 'P', 'El meu perfil', 'Com vas i què et convé practicar', () => nav('profile')],
     ['gear', 'S', 'Configuració', 'La bateria i el retard del so', () => nav('setup')],
     ['book', 'A', 'Com es juga', 'La carta, escoltar i tocar', () => nav('howto')],
   ];
@@ -357,7 +356,7 @@ SCREENS.home = (root) => {
   menu.forEach((m, i) => { acts[`m${i}`] = m[4]; });
   bind(root, acts);
   S.screenKeys = Object.fromEntries([...menu.map((m) => [m[1].toLowerCase(), m[4]]), ['j', () => nav('who')], ['g', () => (raw ? openStep('canco') : nav('song'))]]);
-  setKeys([['Enter', raw ? 'continua el full de ruta' : 'tria la cançó'], ['↑↓←→', 'moure'], ['G', 'cançó sencera'], ['R Q C B T E P S A', 'dreceres']]);
+  setKeys([['Enter', raw ? 'continua el full de ruta' : 'tria la cançó'], ['↑↓←→', 'moure'], ['G', 'cançó sencera'], ['R Q C B T E S A', 'dreceres']]);
 };
 
 // ---- Com es juga (la primera vegada, i des de l'inici amb A) ------------------------------------------------------
@@ -656,7 +655,10 @@ SCREENS.skills = (root, params) => {
   const nx = stepById(recommended());
   const k = Math.min(9, params.k ?? Math.max(0, nx.level.n - 1));
   const raw = currentSong();
-  root.innerHTML = `${head('Què sé fer', 'El que has desbloquejat al full de ruta i què vol dir quan toques amb la teva banda.', '<button type="button" class="btn btn-ghost" data-act="print" tabindex="-1">Imprimeix <kbd>I</kbd></button>')}
+  const tab = params.tab ?? 'banda';
+  root.innerHTML = qsfHead(tab);
+  if (tab !== 'banda') { qsfBody(root, tab); return; }
+  root.innerHTML += `
     <div class="scr-body skills">
       <div class="panel col"><h3>Nivells</h3><div class="list scroll">${levels.map((x, i) => `<button type="button" class="item${x.done ? ' done' : ''}${x.unlocked ? '' : ' dim'}${i === k ? ' sel' : ''}" data-act="lv" data-k="${i}" data-key="sk${i}"${i === k ? ' data-autofocus' : ''}><span class="ic">${x.done ? icon('check') : `<b>${x.level.n}</b>`}</span><span class="tx"><b>${esc(x.level.titol)}</b><small>${x.ok.length} de ${x.level.passos.length} passos${x.tempo ? ` · fins a ${x.tempo} bpm` : ''}</small></span><span class="st">${x.done ? '✓' : x.unlocked ? '◐' : `<span class="lock">${icon('lock')}</span>`}</span></button>`).join('')}</div></div>
       <div class="panel col skill-detail scroll" id="sk-detail"></div>
@@ -665,8 +667,9 @@ SCREENS.skills = (root, params) => {
         ${pathDone() ? `<p class="path-end">${esc(PATH_END)}</p>` : ''}
         <h3>${icon('bag').replace('<svg', '<svg width="15" height="15"')} A la banda ja pots…</h3>
         ${on.length ? `<ul>${on.map((x) => `<li><span class="num">${x.level.n}</span>${esc(x.banda)}</li>`).join('')}</ul>` : '<p class="muted">Encara res: comença pel nivell 1. Un pas compta quan el toques com a mínim a «A prop».</p>'}
-        <h3 class="path-h">Com tries el teu camí</h3>
-        ${pathChoicesHtml(player())}
+        <h3 class="path-h">Com t’estudies</h3>
+        ${(() => { const L = (player()?.choices ?? []).filter((c) => c.choice); const ins = L.length >= MIN_CHOICES ? pathInsights(L) : []; return ins.length ? `<ul class="est-ins"><li>${esc(ins[0])}</li></ul>` : ''; })()}
+        <p class="muted small">Com et van les estratègies que tries per practicar: a la pestanya <b>Com vas</b> <kbd>2</kbd>.</p>
       </div>
     </div>`;
   const show = (i) => {
@@ -680,10 +683,10 @@ SCREENS.skills = (root, params) => {
       ${cards.length ? `<h3>Cartes que ja toques</h3><div class="sk-cards">${cards.map((id) => `<div class="thumb">${thumb(cardById(id))}</div>`).join('')}</div>` : ''}`;
   };
   root.querySelectorAll('[data-act="lv"]').forEach((el) => el.addEventListener('focus', () => show(Number(el.dataset.k))));
-  bind(root, { lv: (el) => nav('level', { n: levels[Number(el.dataset.k)].level.n }), print: () => window.print() });
+  bind(root, { lv: (el) => nav('level', { n: levels[Number(el.dataset.k)].level.n }), print: () => window.print(), ...qsfTabActs() });
   show(k);
-  S.screenKeys = { i: () => window.print() };
-  setKeys([['↑↓', 'nivell'], ['Enter', 'obre el nivell'], ['I', 'imprimeix'], ['Esc', 'enrere']]);
+  S.screenKeys = { i: () => window.print(), ...qsfTabKeys() };
+  setKeys([['1 2 3', 'pestanya'], ['↑↓', 'nivell'], ['Enter', 'obre el nivell'], ['I', 'imprimeix'], ['Esc', 'enrere']]);
 };
 const BANDA_TXT = (n) => `Quan el desbloquegis: ${skillSummary({ state: () => 'ok', rec: () => null })[n - 1].banda.charAt(0).toLowerCase()}${skillSummary({ state: () => 'ok', rec: () => null })[n - 1].banda.slice(1)}`;
 
@@ -1655,7 +1658,7 @@ function finish(sum) {
   if (newly.length) {
     const c = cardById(newly[0]);
     const all = ALL_PATTERNS();
-    ub.innerHTML = `<div class="unlock-card">${thumb(c)}</div><div><b>Patró desbloquejat!</b><span>${esc(cardLabel(c))}${c.title && !c.style ? ' · ' + esc(c.title) : ''}${newly.length > 1 ? ` (i ${newly.length - 1} més)` : ''}</span><small>Ja en tens ${all.filter(unlocked).length} de ${all.length}. Els veuràs al teu perfil.</small></div>`;
+    ub.innerHTML = `<div class="unlock-card">${thumb(c)}</div><div><b>Patró desbloquejat!</b><span>${esc(cardLabel(c))}${c.title && !c.style ? ' · ' + esc(c.title) : ''}${newly.length > 1 ? ` (i ${newly.length - 1} més)` : ''}</span><small>Ja en tens ${all.filter(unlocked).length} de ${all.length}. Els veuràs a «Què sé fer».</small></div>`;
   }
   // 1. Nivell (a l'entrenador de tempo, segons el silenci més llarg que has aguantat)
   const ach = T ? (T.record >= 8 ? 2 : T.record >= 4 ? 1 : 0) : achOf(sum.stars);
@@ -1933,11 +1936,39 @@ function pathInsights(all) {
   if (best) out.push(`El que millor t’ha funcionat és ${CHOICE_VERB[best.id]}: t’ha anat millor ${best.g} de ${best.n} vegades.`);
   return out.slice(0, 4);
 }
-function pathChoicesHtml(p) {
+/** «Com vas» · Com t’estudies: per a cada estratègia que tries, com t’ha anat l’intent següent (avaluació formadora). */
+function estrategiesHtml(p) {
+  const L = (p?.choices ?? []).filter((c) => c.choice && c.choice !== 'other');
+  const intro = `<h2>Com t’estudies</h2><p class="muted small">Quan acabes de tocar, tries com continuar: baixar el tempo, escoltar-ho primer, practicar la peça que falla… Aquí veus quines d’aquestes estratègies t’ajuden a millorar. El que compta és com et va l’intent següent.</p>`;
+  if (L.length < MIN_CHOICES) return `${intro}<p class="est-buit">Has triat ${L.length} ${L.length === 1 ? 'vegada' : 'vegades'}. A partir de ${MIN_CHOICES} tries, aquí veuràs què et funciona.</p>`;
+  const good = (c) => c.nextLevel > c.level || c.nextLevel === 2;
+  const ins = pathInsights(L);
+  const rows = CHOICE_IDS.map((id) => {
+    const mine = L.filter((c) => c.choice === id);
+    if (!mine.length) return null;
+    const r = mine.filter((c) => c.nextLevel != null);
+    const g = r.filter(good).length;
+    const w = r.filter((c) => !good(c) && c.nextLevel < c.level).length;
+    const s = r.length - g - w;
+    return { id, n: mine.length, r: r.length, g, s, w };
+  }).filter(Boolean).sort((a, b) => b.n - a.n);
+  const pc = (x, r) => (r ? (x / r) * 100 : 0);
+  const row = (x) => `<div class="est-row"><span class="nm">${esc(CHOICE_NAME[x.id])}</span><span class="n">${x.n}×</span>
+    <span class="est-bar" title="Després: millor ${x.g} · igual ${x.s} · pitjor ${x.w}">${x.r ? `<i class="g" style="width:${pc(x.g, x.r)}%"></i><i class="s" style="width:${pc(x.s, x.r)}%"></i><i class="w" style="width:${pc(x.w, x.r)}%"></i>` : ''}</span>
+    <b>${x.r ? `${x.g} de ${x.r}` : '—'}</b></div>`;
+  return `${intro}
+    ${ins.length ? `<ul class="est-ins">${ins.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="est-buit">Encara no hi ha prou intents després de les teves tries per saber què et funciona. Continua i aquí ho veuràs.</p>'}
+    <h3>Cada estratègia, i com t’ha anat després</h3>
+    <div class="est-taula">${rows.map(row).join('')}</div>
+    <p class="est-llegenda"><span><i class="g"></i>t’ha anat millor</span><span><i class="s"></i>igual</span><span><i class="w"></i>pitjor</span><span>«3 de 5»: millor 3 de les 5 vegades que hem pogut veure l’intent següent</span></p>
+    ${pathChoicesHtml(p, true)}`;
+}
+function pathChoicesHtml(p, nomesRegistre = false) {
   const L = (p?.choices ?? []).filter((c) => c.choice);
   if (L.length < MIN_CHOICES) return '<p class="muted small">Cada cop que acabes de tocar, tries com vols continuar. Quan hagis triat unes quantes vegades, aquí veuràs quines tries et funcionen.</p>';
-  const ins = pathInsights(L);
+  const ins = nomesRegistre ? [] : pathInsights(L);
   const lines = L.slice(-8).reverse().map((c) => `<li>${esc(capFirst(c.where))} estaves <b>«${ACH_NAME[c.level]}»</b>: vas triar <em>${esc(c.choiceLabel ?? CHOICE_NAME[c.choice])}</em>${c.nextLevel != null ? ` → després <b>«${ACH_NAME[c.nextLevel]}»</b>` : ''}.${c.suggested && c.suggested !== c.choice ? ` Una altra opció era <em>${esc(c.suggestedLabel ?? CHOICE_NAME[c.suggested])}</em>.` : ''}</li>`);
+  if (nomesRegistre) return `<details class="path-log"><summary>Les teves últimes decisions</summary><ul>${lines.join('')}</ul></details>`;
   return `<ul class="path-ins">${(ins.length ? ins : ['Encara no hi ha prou intents després de les teves tries per veure què et funciona. Continua triant i aquí ho veuràs.']).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     <details class="path-log"><summary>Les teves últimes decisions</summary><ul>${lines.join('')}</ul></details>`;
 }
@@ -1965,33 +1996,37 @@ function features(c) {
 }
 const pieceRow = (cls, r) => `<div class="res-piece"><span class="dot" style="background:${LANE_COLOR[PIECES[cls]?.lane ?? cls] ?? '#999'}"></span><span class="nm">${esc(cls === 'oh' ? 'Charles obert' : LANE_LABEL[PIECES[cls]?.lane ?? cls] ?? cls)}</span><span class="bar"><i style="width:${Math.round(r * 100)}%;background:${r >= 0.75 ? 'var(--ok)' : r >= 0.4 ? 'var(--mig)' : 'var(--ko)'}"></i></span><b>${Math.round(r * 100)} %</b></div>`;
 
-SCREENS.profile = (root, params) => {
-  const name = store.currentName();
+// «El meu perfil» ara és dins de «Què sé fer» (pestanyes «Com vas» i «Historial»)
+SCREENS.profile = (root, params) => nav('skills', { tab: params.tab === 'hist' || params.tab === 'coll' ? 'hist' : 'com' }, { push: false });
+
+const QSF_TABS = [['banda', 'A la banda'], ['com', 'Com vas'], ['hist', 'Historial']];
+function qsfHead(tab) {
+  return head('Què sé fer', `${stepsDone()} de ${ALL_STEPS.length} passos del full de ruta · ${ALL_PATTERNS().filter(unlocked).length} patrons desbloquejats`,
+    `<div class="tabs" role="tablist">${QSF_TABS.map(([id, t], i) => `<button type="button" class="tab" role="tab" aria-selected="${id === tab}" data-act="qtab" data-tab="${id}" data-key="tab:${id}"><kbd>${i + 1}</kbd> ${t}</button>`).join('')}</div><button type="button" class="btn btn-ghost" data-act="print" tabindex="-1">Imprimeix <kbd>I</kbd></button>`);
+}
+const qsfGo = (tab) => nav('skills', { tab, focusKey: `tab:${tab}` }, { push: false });
+const qsfTabActs = () => ({ qtab: (el) => qsfGo(el.dataset.tab) });
+const qsfTabKeys = () => ({ 1: () => qsfGo('banda'), 2: () => qsfGo('com'), 3: () => qsfGo('hist') });
+
+function qsfBody(root, tab) {
   const p = player();
-  const tab = params.tab ?? 'resum';
   const H = (p?.history ?? []).filter((h) => h.total > 0);
-  const tabs = [['resum', 'Resum'], ['coll', 'Col·lecció'], ['hist', 'Historial']];
-  root.innerHTML = `${head(`El perfil de ${name ?? ''}`, `${stepsDone()} de ${ALL_STEPS.length} passos del full de ruta · ${ALL_PATTERNS().filter(unlocked).length} patrons desbloquejats`, `<div class="tabs" role="tablist">${tabs.map(([id, t], i) => `<button type="button" class="tab" role="tab" aria-selected="${id === tab}" data-act="tab" data-tab="${id}" data-key="tab:${id}"><kbd>${i + 1}</kbd> ${t}</button>`).join('')}</div>`)}
-    <div class="scr-body" id="prof-body" style="grid-template-rows:minmax(0,1fr)"></div>`;
-  bind(root, { tab: (el) => nav('profile', { tab: el.dataset.tab, focusKey: `tab:${el.dataset.tab}` }, { push: false }) });
-  S.screenKeys = { 1: () => nav('profile', { tab: 'resum' }, { push: false }), 2: () => nav('profile', { tab: 'coll' }, { push: false }), 3: () => nav('profile', { tab: 'hist' }, { push: false }) };
-  setKeys([['1 2 3', 'resum / col·lecció / historial'], ['↑↓←→', 'moure'], ['Enter', 'tria'], ['Esc', 'enrere']]);
+  root.insertAdjacentHTML('beforeend', '<div class="scr-body" id="prof-body" style="grid-template-rows:minmax(0,1fr)"></div>');
+  bind(root, { ...qsfTabActs(), print: () => window.print() });
+  S.screenKeys = { i: () => window.print(), ...qsfTabKeys() };
+  setKeys([['1 2 3', 'pestanya'], ['↑↓←→', 'moure'], ['Enter', 'tria'], ['I', 'imprimeix'], ['Esc', 'enrere']]);
   const body = $('prof-body');
   const MODE = { route: 'Full de ruta', mission: 'Carta', free: 'Amb la banda', song: 'Cançó', tempo: 'Tempo', style: 'Estil' };
 
-  if (tab === 'coll') {
-    const groups = [...LEVELS.map((L) => [L.name, L.missions, openMission]), ['Estils', STYLE_IDS(), openStyleCard]];
-    body.innerHTML = `<div class="panel col scroll">${groups.map(([nm, ids], gi) => `<h3>${esc(nm)} (${ids.filter(unlocked).length}/${ids.length})</h3>${cardTiles(ids, `c${gi}`, { stars: playedStars })}`).join('')}</div>`;
-    groups.forEach(([, , fn], gi) => body.querySelectorAll(`[data-act="c${gi}"]`).forEach((t) => t.addEventListener('click', () => fn(t.dataset.id))));
-    body.querySelector('.tile')?.setAttribute('data-autofocus', '');
-    return;
-  }
   if (tab === 'hist') {
-    body.innerHTML = `<div class="panel col scroll">${H.length ? `<table class="hist"><thead><tr><th>Quan</th><th>Què</th><th>Pas / carta</th><th>Cançó</th><th>Tempo</th><th>Precisió</th></tr></thead><tbody>${H.slice(-80).reverse().map((h) => `<tr><td>${new Date(h.t).toLocaleString('ca', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td><td>${MODE[h.mode] ?? h.mode}</td><td>${h.step ? esc(`${stepCode(stepById(h.step))} · ${stepById(h.step)?.titol ?? ''}`) : esc(cardLabel(cardById(h.card)) || h.card)}</td><td>${esc(h.song ?? '')}</td><td>${h.tempo}</td><td>${Math.round(h.score * 100)} %${h.quietBest != null ? ` · ${h.quietBest} c. en silenci` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Encara no hi ha cap partida.</p>'}</div>`;
+    const groups = [...LEVELS.map((L) => [L.name, L.missions, openMission]), ['Estils', STYLE_IDS(), openStyleCard]];
+    body.innerHTML = `<div class="hist-grid"><div class="panel col scroll"><h2>Les últimes vegades que has tocat</h2>${H.length ? `<table class="hist"><thead><tr><th>Quan</th><th>Què</th><th>Pas / carta</th><th>Cançó</th><th>Tempo</th><th>Precisió</th></tr></thead><tbody>${H.slice(-80).reverse().map((h) => `<tr><td>${new Date(h.t).toLocaleString('ca', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td><td>${MODE[h.mode] ?? h.mode}</td><td>${h.step && stepById(h.step) ? esc(`${stepCode(stepById(h.step))} · ${stepById(h.step)?.titol ?? ''}`) : esc(cardLabel(cardById(h.card)) || h.card)}</td><td>${esc(h.song ?? '')}</td><td>${h.tempo}</td><td>${Math.round(h.score * 100)} %${h.quietBest != null ? ` · ${h.quietBest} c. en silenci` : ''}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Encara no hi ha cap partida.</p>'}</div>
+      <div class="panel col scroll"><h2>La teva col·lecció de patrons</h2>${groups.map(([nm, ids], gi) => `<h3>${esc(nm)} (${ids.filter(unlocked).length}/${ids.length})</h3>${cardTiles(ids, `c${gi}`, { stars: playedStars })}`).join('')}</div></div>`;
+    groups.forEach(([, , fn], gi) => body.querySelectorAll(`[data-act="c${gi}"]`).forEach((t) => t.addEventListener('click', () => fn(t.dataset.id))));
     return;
   }
   if (!H.length) {
-    body.innerHTML = `<div class="panel col"><p class="lead">Encara no hi ha cap partida guardada. Cada cop que acabis un pas del full de ruta, una carta d'estil o l'entrenador de tempo, aquí veuràs com vas i què et convé practicar.</p><button type="button" class="btn btn-red" id="prof-start" data-autofocus style="align-self:flex-start">▶ Continua el full de ruta</button></div>`;
+    body.innerHTML = `<div class="panel col"><p class="lead">Encara no hi ha cap partida guardada. Cada cop que acabis un pas del full de ruta, una carta d'estil o l'entrenador de tempo, aquí veuràs com vas, què et convé practicar i com et van les estratègies que tries per estudiar.</p><button type="button" class="btn btn-red" id="prof-start" data-autofocus style="align-self:flex-start">▶ Continua el full de ruta</button></div>`;
     $('prof-start').onclick = () => openStep(recommended());
     return;
   }
@@ -2033,7 +2068,8 @@ SCREENS.profile = (root, params) => {
   if (!p.tempoBest && !H.some((h) => h.mode === 'tempo')) recs.push({ text: 'Encara no has provat l’<b>Entrenador de tempo</b>: és la millor manera de saber si el pols el portes tu.', label: 'Prova-ho', fn: () => nav('cards', { mode: 'tempo' }) });
 
   const minutes = Math.round(H.reduce((a, h) => a + (h.bars || 8) * (240 / (h.tempo || 90)), 0) / 60);
-  body.innerHTML = `<div class="prof-grid">
+  body.innerHTML = `<div class="prof-grid com-grid">
+    <div class="panel col scroll estrat">${estrategiesHtml(p)}</div>
     <div class="kpis">
       <div class="kpi"><b>${stepsDone()}/${ALL_STEPS.length}</b><span>passos del full de ruta</span></div>
       <div class="kpi"><b>${minutes}</b><span>minuts tocant · ${H.length} partides</span></div>
