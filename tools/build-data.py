@@ -6,6 +6,7 @@ Es va fer servir una sola vegada (25-9-2026). Entrades:
   /tmp/geo.json  = on cauen els números 1-4 a cada imatge (x1, dx, ytop), detectats a les imatges.
 Correcció: al Break 6 la imatge té el bombo a la «i» del 4 (pas 14), no al 4 (pas 12) com deia dades.js.
 Surt data/cartes.json (després convertit a data/cartes.js) i les imatges a assets/cartes/.
+S'executa des de l'arrel del repo.
 """
 import json, numpy as np
 from PIL import Image, ImageOps
@@ -14,7 +15,7 @@ B=json.load(open('/tmp/bat.json'))
 for c in B:
     if c['num']=='Break 6': c['kk']=[0,8,14]
 geo=json.load(open('/tmp/geo.json'))
-SRC='/home/claude/Cartes-rockin/imatges/Bateria'
+SRC='../Cartes-rockin/imatges/Bateria'   # carpeta de les imatges de les cartes (relativa a l'arrel del repo)
 def cls(c):
     r,g,b=c
     if abs(r-g)<25 and abs(g-b)<25: return 'gray'
@@ -62,6 +63,6 @@ for c in B:
     rec=dict(id=ids(c), num=c['num'], title=c.get('title',''), grid=grid, img=f'assets/cartes/{ids(c)}.png', brk=bool(c.get('brk')), notes=notes, geo=g, marks=marks)
     out.append(rec)
     if miss: print(rec['id'],'no mark:',miss)
-    im.save(f"/home/claude/bateria/assets/cartes/{rec['id']}.png", optimize=True)
-json.dump(out,open('/home/claude/bateria/data/cartes.json','w'),ensure_ascii=False)
+    im.save(f"assets/cartes/{rec['id']}.png", optimize=True)
+json.dump(out,open('data/cartes.json','w'),ensure_ascii=False)
 print(len(out))
