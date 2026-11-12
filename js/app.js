@@ -200,8 +200,9 @@ function playedStars(id) {
 }
 const unlocked = (id) => starsFor(id) >= 2;
 const ALL_PATTERNS = () => [...ALL_MISSIONS, ...STYLES.flatMap((st) => st.cards.map((c) => c.id))];
-const lockClass = (id) => (unlocked(id) ? ' unlocked' : ' locked');
-const lockBadge = (id) => (unlocked(id) ? '<span class="lock-badge" title="Patró desbloquejat">Nou</span>' : '');
+// Tot està obert: qualsevol carta es pot tocar. Només les que ja et surten («A prop» o més) porten la marca.
+const lockClass = (id) => (unlocked(id) ? ' unlocked' : '');
+const lockBadge = (id) => (unlocked(id) ? '<span class="lock-badge" title="Ja et surt: és a «Què sé fer»">✓ Ja et surt</span>' : '');
 
 // ---- Navegació -------------------------------------------------------------------------------------------------
 const STATIC = new Set(['setup', 'play']);
@@ -660,7 +661,7 @@ SCREENS.skills = (root, params) => {
   if (tab !== 'banda') { qsfBody(root, tab); return; }
   root.innerHTML += `
     <div class="scr-body skills">
-      <div class="panel col"><h3>Nivells</h3><div class="list scroll">${levels.map((x, i) => `<button type="button" class="item${x.done ? ' done' : ''}${x.unlocked ? '' : ' dim'}${i === k ? ' sel' : ''}" data-act="lv" data-k="${i}" data-key="sk${i}"${i === k ? ' data-autofocus' : ''}><span class="ic">${x.done ? icon('check') : `<b>${x.level.n}</b>`}</span><span class="tx"><b>${esc(x.level.titol)}</b><small>${x.ok.length} de ${x.level.passos.length} passos${x.tempo ? ` · fins a ${x.tempo} bpm` : ''}</small></span><span class="st">${x.done ? '✓' : x.unlocked ? '◐' : `<span class="lock">${icon('lock')}</span>`}</span></button>`).join('')}</div></div>
+      <div class="panel col"><h3>Nivells</h3><div class="list scroll">${levels.map((x, i) => `<button type="button" class="item${x.done ? ' done' : ''}${x.unlocked ? '' : ' dim'}${i === k ? ' sel' : ''}" data-act="lv" data-k="${i}" data-key="sk${i}"${i === k ? ' data-autofocus' : ''}><span class="ic">${x.done ? icon('check') : `<b>${x.level.n}</b>`}</span><span class="tx"><b>${esc(x.level.titol)}</b><small>${x.ok.length} de ${x.level.passos.length} passos${x.tempo ? ` · fins a ${x.tempo} bpm` : ''}</small></span><span class="st">${x.done ? '✓' : x.unlocked ? '◐' : '○'}</span></button>`).join('')}</div></div>
       <div class="panel col skill-detail scroll" id="sk-detail"></div>
       <div class="panel col scroll bag">
         <div class="bag-top"><div><small>Cançó</small><b>${esc(raw?.titol ?? '—')}</b></div><div><small>Nivells desbloquejats</small><b>${on.length} de 10</b></div><div><small>Ara treballes</small><b>${esc(stepCode(nx))} · ${esc(nx.titol)}</b></div></div>
@@ -688,7 +689,7 @@ SCREENS.skills = (root, params) => {
   S.screenKeys = { i: () => window.print(), ...qsfTabKeys() };
   setKeys([['1 2 3', 'pestanya'], ['↑↓', 'nivell'], ['Enter', 'obre el nivell'], ['I', 'imprimeix'], ['Esc', 'enrere']]);
 };
-const BANDA_TXT = (n) => `Quan el desbloquegis: ${skillSummary({ state: () => 'ok', rec: () => null })[n - 1].banda.charAt(0).toLowerCase()}${skillSummary({ state: () => 'ok', rec: () => null })[n - 1].banda.slice(1)}`;
+const BANDA_TXT = (n) => `Quan et surti: ${skillSummary({ state: () => 'ok', rec: () => null })[n - 1].banda.charAt(0).toLowerCase()}${skillSummary({ state: () => 'ok', rec: () => null })[n - 1].banda.slice(1)}`;
 
 // ---- Tria de carta (toca amb la banda / entrenador de tempo) -------------------------------------------------------
 function cardTiles(ids, act, { stars } = {}) {
@@ -711,7 +712,7 @@ SCREENS.cards = (root, params) => {
     : 'Tria una carta: la banda tocarà fins que diguis prou.';
   root.innerHTML = `${head(tempo ? 'Entrenador de tempo' : 'Toca amb la banda', esc(sub))}
     <div class="scr-body picker">
-      <div class="panel col"><h3>Cartes</h3><div class="list scroll">${groups.map(([name, ids], i) => `<button type="button" class="item${i === g ? ' sel' : ''}" data-act="g" data-g="${i}" data-key="g${i}"${i === g ? ' data-autofocus' : ''}><span class="tx"><b>${esc(name)}</b><small>${ids.length} cartes · ${ids.filter(unlocked).length} desbloquejades</small></span></button>`).join('')}</div></div>
+      <div class="panel col"><h3>Cartes</h3><div class="list scroll">${groups.map(([name, ids], i) => `<button type="button" class="item${i === g ? ' sel' : ''}" data-act="g" data-g="${i}" data-key="g${i}"${i === g ? ' data-autofocus' : ''}><span class="tx"><b>${esc(name)}</b><small>${ids.length} cartes · ${ids.filter(unlocked).length} ja et surten</small></span></button>`).join('')}</div></div>
       <div class="panel col scroll" id="pick-grid">${cardTiles(groups[g][1], 'card')}</div>
     </div>`;
   const open = (id) => {

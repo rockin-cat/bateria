@@ -250,9 +250,7 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 .tile-txt { display: flex; flex-direction: column; padding: 0 3px 2px; min-width: 0; }
 .tile-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-txt small { color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2em; }
-.tile.locked .tile-img img, .tile.locked .tile-img svg { filter: grayscale(1); opacity: .45; }
-.tile.locked .tile-txt b { color: var(--ink2); }
-.lock-badge { position: absolute; right: 4px; top: 4px; font-size: 13px; background: #fff; border-radius: 999px; padding: 0 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.lock-badge { position: absolute; right: 4px; top: 4px; font-size: 13px; background: var(--ok, #2fbf71); color: #fff; border-radius: 999px; padding: 1px 7px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
 .style-detail { display: flex; flex-direction: column; gap: 10px; }
 .style-detail .big { font-size: 24px; font-weight: 700; }
 .style-detail .lead { color: var(--ink2); }
