@@ -312,7 +312,7 @@ SCREENS.home = (root) => {
   const r = routeRec(st.id);
   const menu = [
     ['map', 'R', 'Full de ruta', `Els 10 nivells del pòster · ${done} de ${ALL_STEPS.length} passos`, () => nav('map')],
-    ['bag', 'Q', 'Què sé fer', 'A la banda, com vas i com t’estudies', () => nav('skills')],
+    ['bag', 'Q', 'Què sé fer', 'A la banda, com vas i com practiques', () => nav('skills')],
     ['note', 'C', 'La cançó', raw ? `Ara: ${raw.titol}` : 'Tria amb quina cançó aprens', () => nav('song')],
     ['drum', 'B', 'Toca amb la banda', 'Qualsevol carta, fins que diguis prou', () => nav('cards', { mode: 'free' })],
     ['clock', 'T', 'Entrenador de tempo', 'La banda calla: aguanta el pols', () => nav('cards', { mode: 'tempo' })],
@@ -668,7 +668,7 @@ SCREENS.skills = (root, params) => {
         ${pathDone() ? `<p class="path-end">${esc(PATH_END)}</p>` : ''}
         <h3>${icon('bag').replace('<svg', '<svg width="15" height="15"')} A la banda ja pots…</h3>
         ${on.length ? `<ul>${on.map((x) => `<li><span class="num">${x.level.n}</span>${esc(x.banda)}</li>`).join('')}</ul>` : '<p class="muted">Encara res: comença pel nivell 1. Un pas compta quan el toques com a mínim a «A prop».</p>'}
-        <h3 class="path-h">Com t’estudies</h3>
+        <h3 class="path-h">Com practiques</h3>
         ${(() => { const L = (player()?.choices ?? []).filter((c) => c.choice); const ins = L.length >= MIN_CHOICES ? pathInsights(L) : []; return ins.length ? `<ul class="est-ins"><li>${esc(ins[0])}</li></ul>` : ''; })()}
         <p class="muted small">Com et van les estratègies que tries per practicar: a la pestanya <b>Com vas</b> <kbd>2</kbd>.</p>
       </div>
@@ -1937,10 +1937,10 @@ function pathInsights(all) {
   if (best) out.push(`El que millor t’ha funcionat és ${CHOICE_VERB[best.id]}: t’ha anat millor ${best.g} de ${best.n} vegades.`);
   return out.slice(0, 4);
 }
-/** «Com vas» · Com t’estudies: per a cada estratègia que tries, com t’ha anat l’intent següent (avaluació formadora). */
+/** «Com vas» · Com practiques: per a cada estratègia que tries, com t’ha anat l’intent següent (avaluació formadora). */
 function estrategiesHtml(p) {
   const L = (p?.choices ?? []).filter((c) => c.choice && c.choice !== 'other');
-  const intro = `<h2>Com t’estudies</h2><p class="muted small">Quan acabes de tocar, tries com continuar: baixar el tempo, escoltar-ho primer, practicar la peça que falla… Aquí veus quines d’aquestes estratègies t’ajuden a millorar. El que compta és com et va l’intent següent.</p>`;
+  const intro = `<h2>Com practiques</h2><p class="muted small">Quan acabes de tocar, tries com continuar: baixar el tempo, escoltar-ho primer, practicar la peça que falla… Aquí veus quines d’aquestes estratègies t’ajuden a millorar. El que compta és com et va l’intent següent.</p>`;
   if (L.length < MIN_CHOICES) return `${intro}<p class="est-buit">Has triat ${L.length} ${L.length === 1 ? 'vegada' : 'vegades'}. A partir de ${MIN_CHOICES} tries, aquí veuràs què et funciona.</p>`;
   const good = (c) => c.nextLevel > c.level || c.nextLevel === 2;
   const ins = pathInsights(L);
