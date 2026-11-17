@@ -1882,7 +1882,6 @@ function finish(sum) {
     toast(`Fet: ara el joc compensa ${store.settings().latency} ms. Es pot canviar a la configuració.`);
     $('result').hidden = true;
   });
-  small('🃏 Mira la carta', () => { $('result').hidden = true; $('btn-go').focus(); setKeys(playKeys()); });
   $('result').hidden = false;
   setKeys([['↑↓←→', 'tria'], ['Enter', 'fes-ho'], ['Esc', 'mira la carta'], ...(P.mode === 'route' ? [['Esc Esc', 'tornar al nivell']] : [])]);
   (voiceBox.hidden ? grid.querySelector('button') : voiceBox.querySelector('button'))?.focus();
@@ -2279,5 +2278,12 @@ nav(store.currentName() ? (currentSong() ? 'home' : 'song') : 'who', currentSong
 Object.assign(S, {
   tap: (piece, perf, vel) => input.tap(piece, perf, vel),
   heardTime, outputLevel, openMission, openFree, openTempo, openStyleCard, openStep, nav, back, setSong, go: nav,
+});
+// Clicar fora del resultat (o Esc) el tanca per veure la carta pintada
+$('result').addEventListener('click', (e) => {
+  if (e.target !== e.currentTarget) return;
+  $('result').hidden = true;
+  $('btn-go').focus();
+  setKeys(playKeys());
 });
 window.__rockinReady = true;
