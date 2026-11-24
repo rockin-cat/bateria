@@ -906,7 +906,7 @@ function openStep(id, opts = {}) {
     songTempo: song.songTempo,
     band: M.div === 3 && !['shuffle', 'swing', 'balada12'].includes(song.band) ? 'balada12' : song.band,
     metre: M.name,
-    supports: p?.routeSupports ?? 1,
+    supports: p?.routeSupports ?? 0,
     viewType: step.id === 'canco' ? 'guio' : (p?.viewType === 'guio' ? 'score' : p?.viewType ?? 'score'),
     metronome: step.level.n === 1 && !rec,
     quiet: false,
@@ -935,7 +935,7 @@ function openMission(cardId) {
     metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: m?.lastTempo || L?.tempo || 85,
     band: p?.bands[cardId] ?? defaultBand(cardId),
-    supports: (L && p?.supports[L.id]) ?? L?.supports ?? 1,
+    supports: (L && p?.supports[L.id]) ?? 0,
     viewType: p?.viewType ?? 'score',
     metronome: false,
     quiet: false,
@@ -959,7 +959,7 @@ function openFree(cardId) {
     metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: store.mission(cardId)?.lastTempo || L?.tempo || Math.min(110, styleOf(cardId)?.tempo ?? 90),
     band: player()?.bands[cardId] ?? defaultBand(cardId),
-    supports: 1,
+    supports: 0,
     viewType: player()?.viewType ?? 'score',
     metronome: false,
     quiet: false,
@@ -984,7 +984,7 @@ function openTempo(cardId) {
     metre: c.grid === 12 ? '12/8' : '4/4',
     tempo: store.mission(cardId)?.lastTempo || L?.tempo || Math.min(110, st?.tempo ?? 90),
     band: st?.band ?? player()?.bands[cardId] ?? defaultBand(cardId),
-    supports: 1,
+    supports: 0,
     viewType: player()?.viewType ?? 'score',
     metronome: false,
     quiet: false,
@@ -1012,7 +1012,7 @@ function openStyleCard(cardId) {
     tempo: saved?.lastTempo || start,
     styleTempo: st?.tempo ?? 100,
     band: st?.band ?? defaultBand(cardId),
-    supports: 1,
+    supports: 0,
     viewType: p?.viewType ?? 'score',
     metronome: false,
     quiet: false,
@@ -1319,8 +1319,9 @@ function saveSupports() {
 /** Què es veu al costat de la carta: partitura, pista o res. */
 function applyView() {
   const P = S.play;
-  const vt = P.supports === 0 ? 'none' : P.viewType;
+  const vt = P.viewType === 'guio' ? 'guio' : P.supports === 0 ? 'none' : P.viewType;
   document.querySelector('.stage').dataset.vt = vt;
+  document.querySelector('.play-main').dataset.vt = vt;
   for (const b of document.querySelectorAll('.vt')) b.setAttribute('aria-pressed', String(b.dataset.vt === vt));
   $('hints').checked = P.supports >= 2;
   $('hints').disabled = P.supports === 0 || !!(S.session && !S.session.finished);
@@ -1348,6 +1349,8 @@ function setGoButton(state) {
   b.disabled = state === 'ending';
   b.classList.toggle('running', state === 'running');
   b.classList.toggle('loading', state === 'loading');
+  // mentre sona, només la carta i la bateria: la resta s'amaga
+  document.body.classList.toggle('is-playing', state === 'running' || state === 'ending');
   b.textContent = state === 'running' ? (S.play?.mode === 'free' ? '■ Prou, ja he acabat' : '■ Para') : state === 'ending' ? 'Acabant…' : state === 'loading' ? 'Carregant els sons…' : '▶ Escolta i toca';
   for (const el of document.querySelectorAll('#play-controls select, #play-controls input, #play-controls .step')) el.disabled = state !== 'idle';
 }
@@ -1462,7 +1465,7 @@ function loop() {
   const solo = info?.kind === 'play' && !!info.solo;
   if (solo !== S.inSolo) { S.inSolo = solo; document.querySelector('.stage').classList.toggle('solo', solo); }
   if (P.mode === 'tempo' && S.trainer) S.trainer.check(s, pos);
-  const vt = P.supports === 0 ? 'none' : P.viewType;
+  const vt = P.viewType === 'guio' ? 'guio' : P.supports === 0 ? 'none' : P.viewType;
   if (hiding) { /* res */ } else if (vt === 'lanes') lanes.draw(s, pos, { big });
   else if (vt === 'score') notation.update(s, pos, { hitsVersion: s.judge.hits.length, statusVersion: S.judged });
 
@@ -1596,6 +1599,17 @@ function finish(sum) {
 
   const p = player();
   const wasPathDone = pathDone();
+  // «Ja ho tens!» només sense ajuda (només la carta). Amb ajuda, com a molt «A prop»: no es desbloqueja res.
+  const helped = P.mode !== 'tempo' && P.supports > 0 && P.viewType !== 'guio';
+  if (helped && sum.stars >= 3) sum.stars = 2;
+  // Si amb ajuda ja surt, la propera vegada se'n treu una (l'ajuda es retira sola)
+  let fadeMsg = '';
+  if (helped && sum.stars >= 2) {
+    P.supports -= 1;
+    saveSupports();
+    applyView();
+    fadeMsg = P.supports === 0 ? '➡️ La propera vegada, només la carta.' : '➡️ La propera vegada, sense els pads encesos.';
+  }
   const prevStars = (P.mode === 'route' ? p?.route?.[P.step.id]?.stars : P.mode === 'style' ? p?.styleCards?.[P.cardId]?.stars : P.mode === 'mission' ? store.mission(P.cardId)?.stars : 0) ?? 0;
   let rec = null;
   if (P.mode === 'mission' && sum.total) rec = store.recordAttempt(P.cardId, { stars: sum.stars, score: sum.score, tempo: P.tempo });
@@ -1830,8 +1844,8 @@ function finish(sum) {
   // Final del camí (informació, sense botó)
   const advBox = $('res-advice');
   const endNow = !wasPathDone && pathDone();
-  advBox.hidden = !endNow;
-  advBox.innerHTML = endNow ? `<p>${esc(PATH_END)}</p>` : '';
+  advBox.hidden = !endNow && !fadeMsg;
+  advBox.innerHTML = [fadeMsg ? `<p>${esc(fadeMsg)}</p>` : '', endNow ? `<p>${esc(PATH_END)}</p>` : ''].join('');
   if (news) $('res-line').textContent += ` · ${news}`;
 
   const grid = $('res-choices');

@@ -112,6 +112,13 @@
           </div>
           <button type="button" class="ctl icon-btn" id="btn-opts" title="Opcions: banda, avís dels pads, metrònom, compte en silenci (O)" tabindex="-1">Opcions <kbd>O</kbd></button>
           <div class="opts-pop" id="opts-pop" hidden>
+            <div class="ctl vt-group" role="group" aria-label="Què es veu al costat de la carta"><span>Al costat de la carta</span>
+              <button type="button" class="vt" data-vt="none" tabindex="-1"><kbd>3</kbd> Res</button>
+              <button type="button" class="vt" data-vt="score" tabindex="-1"><kbd>1</kbd> Partitura</button>
+              <button type="button" class="vt" data-vt="lanes" tabindex="-1"><kbd>2</kbd> Pista</button>
+              <button type="button" class="vt" data-vt="guio" id="vt-guio" tabindex="-1"><kbd>4</kbd> Guió</button>
+            </div>
+            <label class="ctl tg" id="colors-wrap"><input type="checkbox" id="note-colors" checked tabindex="-1"><span>Colors a la partitura</span></label>
             <label class="ctl sel" id="metre-wrap">Compàs <select id="metre-sel" tabindex="-1"></select></label>
             <label class="ctl sel" id="band-wrap">Banda <select id="band-sel" tabindex="-1"></select></label>
             <label class="ctl tg" title="Els pads del dibuix s'encenen una mica abans de cada cop (H)"><input type="checkbox" id="hints" tabindex="-1"><span>La bateria t'avisa <kbd>H</kbd></span></label>
@@ -138,19 +145,14 @@
           </div>
         </div>
         <div class="stage">
-          <div class="view-tabs" role="group" aria-label="Què es veu al costat de la carta">
-            <button type="button" class="vt" data-vt="score" tabindex="-1"><kbd>1</kbd> Partitura</button>
-            <button type="button" class="vt" data-vt="lanes" tabindex="-1"><kbd>2</kbd> Pista</button>
-            <button type="button" class="vt" data-vt="none" tabindex="-1"><kbd>3</kbd> Només la carta</button>
-            <button type="button" class="vt" data-vt="guio" id="vt-guio" tabindex="-1"><kbd>4</kbd> Guió</button>
-            <label class="toggle vt-colors" id="colors-wrap"><input type="checkbox" id="note-colors" checked tabindex="-1"> Colors</label>
+          <div class="view-tabs">
             <div class="bar-strip" id="bar-strip"></div>
           </div>
           <div class="view-box">
             <div class="score-wrap" id="score-wrap"></div>
             <div class="lanes-wrap" id="lanes-wrap"><canvas id="lanes"></canvas></div>
             <div class="guio-wrap" id="guio-wrap"></div>
-            <div class="none-msg" id="none-msg"><b>Llegeix la carta.</b><span>La partitura i la pista estan amagades. Els teus cops surten igualment a la carta i a la bateria.</span></div>
+            <div class="none-msg" id="none-msg"></div>
             <div class="verdicts" id="verdicts"></div>
             <div class="quiet-cover" id="quiet-cover"><b>Aguanta el tempo</b><span>La banda calla. Continua tocant la carta: quan torni, veuràs on has caigut.</span></div>
             <div class="solo-cover" id="solo-cover"><b>SOLO</b><span>Toca el que vulguis. Al compàs següent, tornes al patró!</span></div>
@@ -218,7 +220,7 @@
 
   <footer class="keybar">
     <div class="keys" id="keys"></div>
-    <span class="ver"><span id="version">v43 · 17 de novembre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
+    <span class="ver"><span id="version">v44 · 24 de novembre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
   </footer>
   <script type="module" src="js/classe-app.js"></script>
 </body>

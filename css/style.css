@@ -737,3 +737,14 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 @media (hover: none) and (pointer: coarse) {
   kbd, .keys { display: none !important; }
 }
+
+/* ---- v44: la carta és l'única lectura. Partitura i pista, a Opcions; mentre sona, s'amaga tot el que no és tocar ---- */
+.vt-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; height: auto; padding: 6px 9px; }
+.vt-group > span { width: 100%; font-size: 12px; color: var(--ink3); }
+.play-main[data-vt="none"] { grid-template-columns: minmax(0, 62fr) minmax(0, 38fr); }
+.stage[data-vt="none"] .none-msg { display: none; }
+.stage[data-vt="none"] .view-box { flex: 0 0 auto; min-height: 0; }
+.stage[data-vt="none"] .kit { flex: 1; display: flex; align-items: center; }
+body.is-playing .coach, body.is-playing .timecheck, body.is-playing .keybar { visibility: hidden; }
+body.is-playing .play-actions { opacity: .6; }
+body.is-playing .play-actions:hover { opacity: 1; }
