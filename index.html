@@ -125,13 +125,14 @@
             <label class="ctl tg" title="Metrònom (M)"><input type="checkbox" id="metro" tabindex="-1"><span>Metrònom <kbd>M</kbd></span></label>
             <label class="ctl tg" id="quiet-wrap" title="La banda calla dos compassos de cada quatre (Q)"><input type="checkbox" id="quiet" tabindex="-1"><span>Compte en silenci <kbd>Q</kbd></span></label>
           </div>
-          <button type="button" class="ctl icon-btn" id="btn-help" title="Com es llegeix la carta i la partitura (?)" tabindex="-1">? Ajuda</button>
+          <button type="button" class="ctl icon-btn" id="btn-help" title="Com es llegeix la carta i la partitura (?)" tabindex="-1">📖 Com es llegeix</button>
           <button type="button" class="ctl icon-btn" id="btn-full" title="Pantalla completa" aria-label="Pantalla completa" tabindex="-1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
         </div>
       </div>
 
       <div class="play-main">
         <div class="play-left">
+          <div class="phase-badge" id="phase-badge" aria-live="polite"></div>
           <div id="cards" class="cards"></div>
           <div class="choose-bar" id="choose-bar" hidden></div>
           <div class="play-actions">
@@ -220,7 +221,7 @@
 
   <footer class="keybar">
     <div class="keys" id="keys"></div>
-    <span class="ver"><span id="version">v44 · 24 de novembre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
+    <span class="ver"><span id="version">v45 · 27 de novembre de 2026</span> · © Rockin.cat SCCL · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener" tabindex="-1">CC BY-NC-SA</a></span>
   </footer>
   <script type="module" src="js/classe-app.js"></script>
 </body>

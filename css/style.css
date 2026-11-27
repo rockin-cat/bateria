@@ -748,3 +748,14 @@ input[type="checkbox"], input[type="range"] { accent-color: var(--red); }
 body.is-playing .coach, body.is-playing .timecheck, body.is-playing .keybar { visibility: hidden; }
 body.is-playing .play-actions { opacity: .6; }
 body.is-playing .play-actions:hover { opacity: 1; }
+
+/* v45 · escoltes o toques, com a guitarra i baix: etiqueta gran sobre la carta i el marc de la carta */
+.play-left { position: relative; }
+.phase-badge { visibility: hidden; min-height: 38px; box-sizing: border-box; align-self: center; margin: 0 auto 6px; padding: 8px 18px; border-radius: 12px; font: 800 22px/1.1 var(--font, system-ui), sans-serif; letter-spacing: .03em; }
+body.is-playing[data-phase] .phase-badge { visibility: visible; }
+body[data-phase="listen"] .phase-badge { background: #5b8def; color: #fff; }
+body[data-phase="ready"] .phase-badge { background: #ffd23f; color: #111; }
+body[data-phase="play"] .phase-badge { background: var(--red, #e2453c); color: #fff; }
+body.is-playing[data-phase="listen"] .cards { outline: 4px dashed #5b8def; outline-offset: 6px; border-radius: 14px; }
+body.is-playing[data-phase="play"] .cards { outline: 4px solid var(--red, #e2453c); outline-offset: 6px; border-radius: 14px; }
+.rk-help-btn { bottom: 40px !important; }

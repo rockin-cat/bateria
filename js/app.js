@@ -19,6 +19,8 @@ import { ROUTE, ALL_STEPS, stepById, stepBars as rawStepBars, stepCards as rawSt
 import { songFromMidi, progFromMidiSong, toBase64, fromBase64, midiEventsOf, midiBarEvents } from './midi.js';
 import { summary as skillSummary } from './skills.js';
 import { METRES, METRE_NAMES, metre, setMetre, cardForMetre, bandForMetre, baseId } from './metre.js';
+import { watchMidiPermission } from './midi-ajuda.js';
+import { installHelp, midiDiagnose } from './ajuda.js';
 
 // Cada pas es toca sobre la roda de la cançó o, si cal l'estructura, sobre la cançó sencera.
 const stepBars = (step, song, choice) => rawStepBars(step, stepSong(step, song), choice);
@@ -1547,6 +1549,13 @@ function setCoach(html, kind = '') {
   const c = $('coach');
   c.innerHTML = html;
   c.dataset.kind = kind;
+  // Escoltes o toques: s'ha de veure d'un cop d'ull (com a guitarra i baix)
+  const phase = { demo: 'listen', count: 'ready', play: 'play', solo: 'play' }[kind] ?? '';
+  const b = $('phase-badge');
+  if (document.body.dataset.phase !== phase) {
+    if (phase) document.body.dataset.phase = phase; else delete document.body.dataset.phase;
+    b.textContent = { listen: '🎧 Escolta · no toquis', ready: '✋ Prepara\'t', play: '🥁 Ara tu' }[phase] ?? '';
+  }
 }
 
 // Veredictes sobre la pista
@@ -2285,6 +2294,17 @@ $('my-sound').checked = mySoundOn();
 kit.showKeys(true);
 setExtraLatency(store.settings().latency);
 input.connect();
+// «? Ajuda» (el mateix a totes les eines) i la franja del permís de MIDI
+const openHelp = installHelp({
+  app: 'bateria',
+  diagnose: async () => [
+    ...(await midiDiagnose('la bateria', () => input.state?.devices ?? S.devices ?? [])),
+    audioContext().state === 'running' ? [true, 'El so està engegat.'] : [null, 'El so s\'engega quan cliques la pàgina.'],
+    [mySoundOn(), mySoundOn() ? 'Sents els teus cops pel joc.' : 'Els teus cops no sonen pel joc (la bateria ja sona). Ho pots canviar a dalt: «Sentir els meus cops».'],
+  ],
+  more: [['📖 Com es llegeix la carta', () => toggleHelp(true)]],
+});
+watchMidiPermission({ what: 'la bateria', openHelp });
 // El primer clic desbloqueja l'àudio (els navegadors ho demanen).
 window.addEventListener('pointerdown', () => { audioContext(); resumeAudio(); }, { once: true });
 window.addEventListener('keydown', () => { audioContext(); resumeAudio(); }, { once: true });
