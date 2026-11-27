@@ -759,3 +759,7 @@ body[data-phase="play"] .phase-badge { background: var(--red, #e2453c); color: #
 body.is-playing[data-phase="listen"] .cards { outline: 4px dashed #5b8def; outline-offset: 6px; border-radius: 14px; }
 body.is-playing[data-phase="play"] .cards { outline: 4px solid var(--red, #e2453c); outline-offset: 6px; border-radius: 14px; }
 .rk-help-btn { bottom: 40px !important; }
+
+.res-tile { position: relative; }
+.res-tile .tile-key { position: absolute; top: 8px; left: 10px; font: 700 12px system-ui, sans-serif; padding: 2px 7px; border-radius: 6px; background: rgb(0 0 0 / 8%); color: inherit; }
+.res-tile.off .tile-key { display: none; }

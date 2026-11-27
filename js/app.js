@@ -1871,7 +1871,7 @@ function finish(sum) {
     const b = mkBtn(o);
     b.className = 'btn res-tile';
     b.dataset.kind = kind(o);
-    b.innerHTML = `<span class="ic" aria-hidden="true">${o.icon}</span><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}`;
+    b.innerHTML = `<kbd class="tile-key">${['slower', 'try', 'helpOn', 'prev'].indexOf(kind(o)) + 1}</kbd><span class="ic" aria-hidden="true">${o.icon}</span><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}`;
     grid.appendChild(b);
   }
   // Si no n'hi ha cap (p. ex. el primer pas no té anterior), el lloc queda buit però hi és
@@ -1906,8 +1906,10 @@ function finish(sum) {
     $('result').hidden = true;
   });
   $('result').hidden = false;
-  setKeys([['↑↓←→', 'tria'], ['Enter', 'fes-ho'], ['Esc', 'mira la carta'], ...(P.mode === 'route' ? [['Esc Esc', 'tornar al nivell']] : [])]);
-  (voiceBox.hidden ? grid.querySelector('button') : voiceBox.querySelector('button'))?.focus();
+  setKeys([['1 2 3 4', 'botons grans'], ['↑↓←→', 'tria'], ['Enter', 'fes-ho'], ['Esc', 'mira la carta']]);
+  // el focus comença a «Pas següent» si ja surt, i si no a «Torna-ho a intentar» (Enter fa el més probable, no «Més lent»)
+  const firstFocus = ach >= 1 ? $('res-actions').querySelector('[data-choice="next"]') : grid.querySelector('[data-kind="try"]');
+  (voiceBox.hidden ? firstFocus ?? grid.querySelector('button') : voiceBox.querySelector('button'))?.focus();
 }
 
 // ---- Com tries el teu camí (metaavaluació a «Què sé fer») -------------------------------------------------------
@@ -2190,6 +2192,10 @@ window.addEventListener('keydown', (e) => {
     if (resultOpen) { $('result').hidden = true; setKeys(playKeys()); $('btn-go').focus(); }
     else if (running) $('btn-go').click();
     else back();
+  } else if (resultOpen && /^[1-4]$/.test(k)) {
+    // 1 2 3 4: els quatre botons grans, sempre en el mateix ordre
+    $('res-choices').querySelector(`[data-kind="${['slower', 'try', 'helpOn', 'prev'][Number(k) - 1]}"]`)?.click();
+    e.preventDefault();
   } else if (resultOpen && k.startsWith('Arrow')) {
     moveFocus(k, $('result'));
   } else if ((k === 'ArrowUp' || k === '+') && idle && !resultOpen) setTempo(P.tempo + 5);

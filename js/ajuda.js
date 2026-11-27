@@ -1,6 +1,15 @@
 // «? Ajuda»: el mateix botó i el mateix tauler a totes les eines Rockin (teclat, bateria, guitarra i baix).
 // A dalt, com està ara mateix l'ordinador (permís, instrument, so); a sota, les preguntes de sempre, amb símbols.
 
+// Les tecles de cada eina (el que surt a «⌨️ Amb el teclat de l'ordinador»)
+const KEYS = {
+  teclat: [['Espai', 'Següent / comença'], ['Esc', 'enrere'], ['1 2 3 4', 'els quatre botons grans del resultat'], ['F', 'pantalla completa'],
+    ['A W S E D F T G Y H U J K', 'les tecles del piano (amb «Tocar amb l\'ordinador» a ⚙ Com toco; A = Do)'], ['Z X', 'una octava avall / amunt']],
+  bateria: [['↑↓←→', 'moure\'t pels botons'], ['Enter', 'tria / comença'], ['Esc', 'enrere'], ['1 2 3 4', 'els quatre botons grans del resultat'],
+    ['Espai F J', 'bombo, caixa i charles (sense bateria)'], ['O', 'opcions']],
+  guitarra: [['Espai', 'toca / pausa'], ['Esc', 'enrere'], ['1 2 3 4', 'els quatre botons grans del resultat'], ['Tab', 'moure\'t pels botons']],
+};
+
 const WORDS = {
   teclat: { inst: 'el teclat', Inst: 'El teclat', icon: '🎹', mine: '«Sentir les meves notes» (a ⚙ Com toco)' },
   bateria: { inst: 'la bateria', Inst: 'La bateria', icon: '🥁', mine: '«Sentir els meus cops» (a dalt)' },
@@ -31,6 +40,9 @@ body.is-playing .rk-help-btn, body.rk-help-hide .rk-help-btn { opacity: .25; }
 .rk-help li { margin: 3px 0; }
 .rk-help .phase { display: inline-block; padding: 2px 10px; border-radius: 8px; font-weight: 700; }
 .rk-help .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.rk-help table.keys { border-collapse: collapse; margin-top: 6px; }
+.rk-help table.keys td { padding: 4px 10px 4px 0; vertical-align: top; }
+.rk-help kbd { display: inline-block; min-width: 20px; padding: 2px 6px; margin: 1px 0; border-radius: 6px; border: 1px solid #ccc; border-bottom-width: 2px; background: #fff; font: 700 13px system-ui, sans-serif; text-align: center; }
 .rk-help .row button { font: inherit; font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 9px; border: 1px solid #ccc; background: #fff; color: #1d1d1f; cursor: pointer; }`;
 
 /**
@@ -75,7 +87,10 @@ export function installHelp({ app = 'teclat', diagnose = () => [], more = [] } =
       <p><span class="phase" style="background:#ff7a1a;color:#fff">🎸 Ara tu</span> Toca.</p>`],
     ['🃏', 'Què faig després de tocar?', `<p>Mira <b>què t'ha faltat</b> i tria un dels quatre botons grans:</p>
       <p>🐢 Més lent · 🎧 Torna-ho a intentar · 💡 Ajuda · ⏮️ Pas anterior</p>
-      <p>A sota: ↻ Repetir igual i ⏭️ Pas següent. «Ja ho tens!» només compta quan et surt sense ajuda.</p>`],
+      <p>A sota: ↻ Repetir igual i ⏭️ Pas següent. «Ja ho tens!» només compta quan et surt sense ajuda.</p>
+      <p>Amb el teclat de l'ordinador: <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> per als quatre botons grans.</p>`],
+    ['⌨️', 'Amb el teclat de l\'ordinador', `<p>Ho pots fer tot sense ratolí. A baix de la pantalla surten les tecles que funcionen en cada moment.</p>
+      <table class="keys">${(KEYS[app] ?? []).map(([k, t]) => `<tr><td>${k.split(' ').map((x) => `<kbd>${x}</kbd>`).join(' ')}</td><td>${t}</td></tr>`).join('')}</table>`],
     ['🛠️', 'Altres problemes', `<ol>
       <li>Torna a carregar la pàgina (Ctrl + R, o Cmd + R al Mac).</li>
       <li>Fes-la servir en una sola pestanya.</li>
@@ -101,7 +116,10 @@ export function installHelp({ app = 'teclat', diagnose = () => [], more = [] } =
       const m = e.target.closest('[data-more]');
       if (m) { dlg.close(); more[Number(m.dataset.more)][1](); }
     });
-    dlg.addEventListener('close', () => dlg?.remove());
+    // mentre l'ajuda és oberta, les dreceres de l'eina callen (Esc, Enter i Tab segueixen funcionant dins del tauler)
+    const shield = (e) => { if (dlg?.open) e.stopImmediatePropagation(); };
+    addEventListener('keydown', shield, true);
+    dlg.addEventListener('close', () => { removeEventListener('keydown', shield, true); dlg?.remove(); });
     document.body.append(dlg);
     dlg.showModal();
   }
