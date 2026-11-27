@@ -31,7 +31,7 @@ body.is-playing .rk-help-btn, body.rk-help-hide .rk-help-btn { opacity: .25; }
 .rk-help li { margin: 3px 0; }
 .rk-help .phase { display: inline-block; padding: 2px 10px; border-radius: 8px; font-weight: 700; }
 .rk-help .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.rk-help .row button { font: inherit; font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 9px; border: 1px solid #ccc; background: #fff; cursor: pointer; }`;
+.rk-help .row button { font: inherit; font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 9px; border: 1px solid #ccc; background: #fff; color: #1d1d1f; cursor: pointer; }`;
 
 /**
  * Posa el botó «? Ajuda» i torna la funció que obre el tauler.

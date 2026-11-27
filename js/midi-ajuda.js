@@ -9,7 +9,7 @@ const STYLE = `
   font: 600 16px/1.35 system-ui, sans-serif; box-shadow: 0 10px 30px rgb(0 0 0 / 25%); }
 .rk-midi-bar .ic { font-size: 28px; line-height: 1; }
 .rk-midi-bar small { display: block; font-weight: 500; font-size: 14px; }
-.rk-midi-bar button { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 9px; border: 1px solid rgb(0 0 0 / 25%); background: #fff; cursor: pointer; white-space: nowrap; }
+.rk-midi-bar button { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 9px; border: 1px solid rgb(0 0 0 / 25%); background: #fff; color: #1d1d1f; cursor: pointer; white-space: nowrap; }
 .rk-midi-bar .x { border: 0; background: transparent; font-size: 20px; padding: 2px 6px; }
 .rk-midi-bar.bad { background: #ffb4a8; }`;
 
